@@ -126,26 +126,25 @@ class CommandProcessor {
         }
     }
     void processCommandFile(String commandfile) throws IOException {
-        String commands = "";
-        commands = new String(Files.readAllBytes(Paths.get(commandfile)));
+        String commands = new String(Files.readAllBytes(Paths.get(commandfile)));
         String lines[] = commands.split("\n");
         for (String line : lines) {
+            if (line.charAt(0) == '#')
+                continue;
             processCommand(line);
         }
     }
 }
 
 class CommandProcessorException {
-
     String command;
     String reason;
     int lineNumber;
 }
 
 public class TestDriver {
-
     public static void main(String[] args) throws IOException {
         CommandProcessor cp = new CommandProcessor();
-        cp.processCommandFile("ledger.script");
+        cp.processCommandFile("C:\\Users\\Andrew\\Documents\\NetBeansProjects\\ledger\\target\\classes\\com\\csci97\\ledger\\testinput.txt");
     }
 }
