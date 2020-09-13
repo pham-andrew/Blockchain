@@ -7,6 +7,8 @@ import java.nio.file.*;
 class Account {
     String address;
     int balance;
+    void setAddress(String a){address=a;}
+    void setBalance(int b){balance=b;}
 }
 
 class Transaction {
@@ -20,33 +22,48 @@ class Block {
     int blockNumber;
     String previousHash;
     String hash;
+    void setBlock(int n, String p, String h){
+        blockNumber=n;
+        previousHash=p;
+        hash=h;
+    }
 }
 
 class Ledger {
     String name;
     String description;
     String seed;
+    Map accounts;
+    
+    //creates first account with address of 0
+    void createMasterAccount() {
+        Account account = new Account();
+        account.setAddress("0");
+        account.setBalance(Integer.MAX_VALUE);
+        accounts.put("0", 0);
+    }
     String createAccount(String accountId) {
         Account account = new Account();
-        account.address = accountId;
-        account.balance = 0;
+        account.setAddress("accountId");
+        account.setBalance(0);
+        accounts.put(accountId, 0);
         return accountId;
     }
-    /*String processTransaction(Transaction transaction) {
+    String processTransaction(Transaction transaction) {
         return transaction.transactionId;
     }
     int getAccountBalance(String address) {
-        return balance;
+        return (int) accounts.get(address);
     }
     Map getAccountBalances() {
-        return accountbalances;
+        return accounts;
     }
     Block getBlock(int blockNumber) {
         return block;
     }
     Transaction getTransaction(String transactionId) {
         return transaction;
-    }*/
+    }
     void validate() {
     }
 }
@@ -55,7 +72,7 @@ class LedgerException {
     String reason;
 }
 class CommandProcessor {
-    //process commands takes individual commands
+    //processcommand takes individual commands
     void processCommand(String command, Ledger ledger) {
         String words[] = command.split(" ");
         if ("create-account".equals(words[0])) {
@@ -98,7 +115,7 @@ class CommandProcessor {
         }
         if ("get-transaction".equals(words[0])) {
             System.out.println("get transaction\n");
-            //ledger.getTransaction(words[1]);
+            ledger.getTransaction(words[1]);
             //TODO output details of transaction id
         }
         if ("validate".equals(words[0])) {
@@ -110,6 +127,7 @@ class CommandProcessor {
     //takes text file, splits it into lines, and feeds to processCommand
     void processCommandFile(String commandfile) throws IOException, CommandProcessorException {
         String commands = new String(Files.readAllBytes(Paths.get(commandfile)));
+        
         //remove comment lines
         String lines[] = commands.split("\n");
         for(int i=0;i<lines.length;i++)
@@ -122,11 +140,12 @@ class CommandProcessor {
                 finalStringBuilder.append(s).append(System.getProperty("line.separator"));
         }  
         commands = finalStringBuilder.toString();
+        
         //ensure that the ledger is created
         String words[] = commands.split(" ");
         if ("create-ledger".equals(words[0])) {
             Ledger ledger = new Ledger();
-            System.out.println("create ledger\n");
+            System.out.println("ledger created\n");
             ledger.name = words[1];
             int seed = 0;
             for (int i = 0; i < words.length; i++) {
@@ -136,18 +155,25 @@ class CommandProcessor {
                 }
             }
             ledger.description = words[3];
-            for (int i = 3; i < seed; i++)//TODO CHECK ON ONE WORD DESC
-            {
+            for (int i = 3; i < seed; i++){//TODO CHECK ON ONE WORD DESC
                 ledger.description += words[i];
             }
             ledger.seed = words[seed + 1];
             
+            //initialize the blockchain
+            //create genesis block
+            Block block = new Block();
+            block.setBlock(0,"0","0");
+            //create master account
+            ledger.createMasterAccount();
+            
             //read each line into process command
             for (String line : lines)
                 processCommand(line, ledger);
+            
         } else {
             System.out.println("Must create ledger first!\n");
-            throw new CommandProcessorException(words[0],"must create ledger first");
+            throw new CommandProcessorException(words[0],"must create ledger first",0);
         }
     }
 }
@@ -156,10 +182,10 @@ class CommandProcessorException extends Exception{
     String command;
     String reason;
     int lineNumber;
-    public CommandProcessorException(String c, String r){
+    public CommandProcessorException(String c, String r, int l){
         command = c;
         reason = r;
-        lineNumber= new Throwable().getStackTrace()[0].getLineNumber();
+        lineNumber= l;
     }
 }
 
