@@ -7,8 +7,6 @@ import java.nio.file.*;
 class Account {
     String address;
     int balance;
-    void setAddress(String a){address=a;}
-    void setBalance(int b){balance=b;}
 }
 
 class Transaction {
@@ -19,9 +17,11 @@ class Transaction {
 }
 
 class Block {
+    Transaction[] transactions = new Transaction[10];
     int blockNumber;
     String previousHash;
     String hash;
+    Map accounts;
     void setBlock(int n, String p, String h){
         blockNumber=n;
         previousHash=p;
@@ -29,47 +29,90 @@ class Block {
     }
 }
 
+//blockchain implemented as a merkle tree
+class BlockChain{
+    Block current;
+    BlockChain left;
+    BlockChain right;
+}
+
 class Ledger {
     String name;
     String description;
     String seed;
-    Map accounts;
+    BlockChain chain;
+    Block current;
     
     //creates first account with address of 0
-    void createMasterAccount() {
+    void init(Block genesis) {
+        //create master account
         Account account = new Account();
-        account.setAddress("0");
-        account.setBalance(Integer.MAX_VALUE);
-        accounts.put("0", 0);
+        account.address="0";
+        account.balance=Integer.MAX_VALUE;
+        current.accounts.put("0", 0);
+        //create genesis block
+        chain.current=genesis;
     }
     String createAccount(String accountId) {
         Account account = new Account();
-        account.setAddress("accountId");
-        account.setBalance(0);
-        accounts.put(accountId, 0);
+        account.address="accountId";
+        account.balance=0;
+        current.accounts.put(accountId, 0);
         return accountId;
     }
     String processTransaction(Transaction transaction) {
         return transaction.transactionId;
     }
     int getAccountBalance(String address) {
-        return (int) accounts.get(address);
+        return (int) current.accounts.get(address);
     }
     Map getAccountBalances() {
-        return accounts;
+        return current.accounts;
     }
-    Block getBlock(int blockNumber) {
-        return block;
+    //tree search to find block we need from root
+    Block getBlock(int blockNumber) throws LedgerException {
+        if (chain.current.blockNumber==blockNumber)
+                return chain.current;
+        return getBlock(blockNumber, chain);
     }
-    Transaction getTransaction(String transactionId) {
-        return transaction;
+    //recursive function to search down the tree
+    Block getBlock(int blockNumber, BlockChain b) throws LedgerException{
+        if(b.current.blockNumber==blockNumber)
+            return b.current;
+        if(b.left!=null)
+            return getBlock(blockNumber, b.left);
+        if(b.right!=null)
+            return getBlock(blockNumber, b.right);
+        throw new LedgerException("getBlock", "cant find block number");
     }
+    
+    Transaction getTransaction(String transactionId) throws LedgerException {
+        for(int i=0;i<10;i++)
+            if(chain.current.transactions[i].transactionId==transactionId)
+                return chain.current.transactions[i];
+        return getTransaction(transactionId, chain);
+    }
+    Transaction getTransaction(String transactionId, BlockChain b) throws LedgerException{
+        for(int i=0;i<10;i++)
+            if(chain.current.transactions[i].transactionId==transactionId)
+                return chain.current.transactions[i];
+        if(b.left!=null)
+            return getTransaction(transactionId, b.left);
+        if(b.right!=null)
+            return getTransaction(transactionId, b.right);
+        throw new LedgerException("getBlock", "cant find transaction");
+    }
+    
     void validate() {
     }
 }
-class LedgerException {
+class LedgerException extends Exception{
     String action;
     String reason;
+    LedgerException(String a, String r) {
+        action=a;
+        reason=r;
+    }
 }
 class CommandProcessor {
     //processcommand takes individual commands
@@ -161,11 +204,9 @@ class CommandProcessor {
             ledger.seed = words[seed + 1];
             
             //initialize the blockchain
-            //create genesis block
             Block block = new Block();
             block.setBlock(0,"0","0");
-            //create master account
-            ledger.createMasterAccount();
+            ledger.init(block);
             
             //read each line into process command
             for (String line : lines)
@@ -185,7 +226,7 @@ class CommandProcessorException extends Exception{
     public CommandProcessorException(String c, String r, int l){
         command = c;
         reason = r;
-        lineNumber= l;
+        lineNumber = l;
     }
 }
 
