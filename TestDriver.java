@@ -49,7 +49,7 @@ class Ledger {
         Account account = new Account();
         account.address="0";
         account.balance=Integer.MAX_VALUE;
-        current.accounts.put("0", 0);
+        current.accounts.put("0", 0);//TODO THIS IS WRONG
         //create genesis block
         chain.current=genesis;
     }
@@ -88,13 +88,13 @@ class Ledger {
     
     Transaction getTransaction(String transactionId) throws LedgerException {
         for(int i=0;i<10;i++)
-            if(chain.current.transactions[i].transactionId==transactionId)
+            if(chain.current.transactions[i].transactionId.equals(transactionId))
                 return chain.current.transactions[i];
         return getTransaction(transactionId, chain);
     }
     Transaction getTransaction(String transactionId, BlockChain b) throws LedgerException{
         for(int i=0;i<10;i++)
-            if(chain.current.transactions[i].transactionId==transactionId)
+            if(chain.current.transactions[i].transactionId.equals(transactionId))
                 return chain.current.transactions[i];
         if(b.left!=null)
             return getTransaction(transactionId, b.left);
@@ -116,7 +116,7 @@ class LedgerException extends Exception{
 }
 class CommandProcessor {
     //processcommand takes individual commands
-    void processCommand(String command, Ledger ledger) {
+    void processCommand(String command, Ledger ledger) throws LedgerException {
         String words[] = command.split(" ");
         if ("create-account".equals(words[0])) {
             System.out.println("create account\n");
@@ -168,7 +168,7 @@ class CommandProcessor {
     }
     
     //takes text file, splits it into lines, and feeds to processCommand
-    void processCommandFile(String commandfile) throws IOException, CommandProcessorException {
+    void processCommandFile(String commandfile) throws IOException, CommandProcessorException, LedgerException {
         String commands = new String(Files.readAllBytes(Paths.get(commandfile)));
         
         //remove comment lines
@@ -231,7 +231,7 @@ class CommandProcessorException extends Exception{
 }
 
 public class TestDriver {
-    public static void main(String[] args) throws IOException, CommandProcessorException {
+    public static void main(String[] args) throws IOException, CommandProcessorException, LedgerException {
         CommandProcessor cp = new CommandProcessor();
         cp.processCommandFile("C:\\Users\\Andrew\\Documents\\NetBeansProjects\\ledger\\target\\classes\\com\\csci97\\ledger\\testinput.txt");
     }
