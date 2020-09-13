@@ -42,33 +42,32 @@ class Ledger {
     String description;
     String seed;
     BlockChain chain;
-    Block currentBlock;
     
-    //creates first account with address of 0
     void init(Block genesis) {
         //create master account
         Account account = new Account();
         account.address="0";
         account.balance=Integer.MAX_VALUE;
-        currentBlock.accounts.put("0", 0);//TODO THIS IS WRONG
         //create genesis block
         chain.current=genesis;
+        chain.current.accounts.put("0", 0);
     }
+    
     String createAccount(String accountId) {
         Account account = new Account();
         account.address="accountId";
         account.balance=0;
-        currentBlock.accounts.put(accountId, 0);
+        chain.current.accounts.put(accountId, 0);
         return accountId;
     }
     String processTransaction(Transaction transaction) {
         return transaction.transactionId;
     }
     int getAccountBalance(String address) {
-        return (int) currentBlock.accounts.get(address);
+        return (int) chain.current.accounts.get(address);
     }
     Map getAccountBalances() {
-        return currentBlock.accounts;
+        return chain.current.accounts;
     }
     //tree search to find block we need from root
     Block getBlock(int blockNumber) throws LedgerException {
@@ -142,10 +141,10 @@ class CommandProcessor {
                 ledger.description += words[i];
             }
             //process payer at payer+1 and receiver at payer+3
-            ledger.currentBlock.accounts.replace(words[payer+1], ledger.getAccountBalance(words[payer+1])-transaction.amount-transaction.fee);//update payer account
-            ledger.currentBlock.accounts.replace(words[payer+3], ledger.getAccountBalance(words[payer+3])+transaction.amount);//update receiver account
-            ledger.currentBlock.transactions[ledger.currentBlock.currentTransaction+1]=transaction;//add transaction to block
-            ledger.currentBlock.currentTransaction++;
+            ledger.chain.current.accounts.replace(words[payer+1], ledger.getAccountBalance(words[payer+1])-transaction.amount-transaction.fee);//update payer account
+            ledger.chain.current.accounts.replace(words[payer+3], ledger.getAccountBalance(words[payer+3])+transaction.amount);//update receiver account
+            ledger.chain.current.transactions[ledger.chain.current.currentTransaction+1]=transaction;//add transaction to block
+            ledger.chain.current.currentTransaction++;
             
             System.out.println(ledger.processTransaction(transaction));
         }
