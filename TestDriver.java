@@ -21,10 +21,10 @@ class Transaction {
 class Block {
     Transaction[] transactions = new Transaction[10];
     int currentTransaction=0;
+    Map<String, Account> accounts = new HashMap<>();
     int blockNumber;
     String previousHash;
     String hash;
-    Map<String, Integer> accounts = new HashMap<>();
     void setBlock(int n, String p, String h){
         blockNumber=n;
         previousHash=p;
@@ -53,25 +53,26 @@ class Ledger {
         //create genesis block
         chain = new BlockChain();
         chain.current=genesis;
-        chain.current.accounts.put("0", 0);
+        chain.current.accounts.put("master", account);
     }
     
     String createAccount(String accountId) {
         Account account = new Account();
         account.address="accountId";
         account.balance=0;
-        chain.current.accounts.put(accountId, 0);
+        chain.current.accounts.put(accountId, account);
         return accountId;
     }
     String processTransaction(Transaction transaction) {
-        chain.current.accounts.replace(transaction.payer, getAccountBalance(transaction.payer)-transaction.amount-transaction.fee);//update payer account
-        chain.current.accounts.replace(transaction.receiver, getAccountBalance(transaction.payer)+transaction.amount);//update receiver account
+        chain.current.accounts.get(transaction.payer).balance=getAccountBalance(transaction.payer)-transaction.amount-transaction.fee;//update payer account
+        chain.current.accounts.get(transaction.payer).balance=getAccountBalance(transaction.payer)+transaction.amount;//update receiver account
         chain.current.transactions[chain.current.currentTransaction+1]=transaction;//add transaction to block
         chain.current.currentTransaction++;
+        //TODO if on tenth transaction save and create new block
         return transaction.transactionId;
     }
     int getAccountBalance(String address) {
-        return (int) chain.current.accounts.get(address);
+        return chain.current.accounts.get(address).balance;
     }
     Map getAccountBalances() {
         return chain.current.accounts;
@@ -113,6 +114,7 @@ class Ledger {
     void validate() {
     }
 }
+
 class LedgerException extends Exception{
     String action;
     String reason;
@@ -121,6 +123,7 @@ class LedgerException extends Exception{
         reason=r;
     }
 }
+
 class CommandProcessor {
     //processcommand takes individual commands
     void processCommand(String command, Ledger ledger) throws LedgerException {
