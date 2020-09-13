@@ -3,6 +3,7 @@ package com.csci97.ledger;
 import java.util.Map;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.HashMap;
 
 class Account {
     String address;
@@ -11,6 +12,7 @@ class Account {
 
 class Transaction {
     String transactionId;
+    String payer, receiver;
     int amount;
     int fee;
     String note;
@@ -22,7 +24,7 @@ class Block {
     int blockNumber;
     String previousHash;
     String hash;
-    Map accounts;
+    Map<String, Integer> accounts = new HashMap<>();
     void setBlock(int n, String p, String h){
         blockNumber=n;
         previousHash=p;
@@ -46,9 +48,10 @@ class Ledger {
     void init(Block genesis) {
         //create master account
         Account account = new Account();
-        account.address="0";
+        account.address="master";
         account.balance=Integer.MAX_VALUE;
         //create genesis block
+        chain = new BlockChain();
         chain.current=genesis;
         chain.current.accounts.put("0", 0);
     }
@@ -61,6 +64,10 @@ class Ledger {
         return accountId;
     }
     String processTransaction(Transaction transaction) {
+        chain.current.accounts.replace(transaction.payer, getAccountBalance(transaction.payer)-transaction.amount-transaction.fee);//update payer account
+        chain.current.accounts.replace(transaction.receiver, getAccountBalance(transaction.payer)+transaction.amount);//update receiver account
+        chain.current.transactions[chain.current.currentTransaction+1]=transaction;//add transaction to block
+        chain.current.currentTransaction++;
         return transaction.transactionId;
     }
     int getAccountBalance(String address) {
@@ -119,12 +126,11 @@ class CommandProcessor {
     void processCommand(String command, Ledger ledger) throws LedgerException {
         String words[] = command.split(" ");
         if ("create-account".equals(words[0])) {
-            System.out.println("create account\n");
+            System.out.println("Account created: " + words[1]);
             Account account = new Account();
             account.address = words[1];
         }
         if ("process-transaction".equals(words[0])) {
-            System.out.println("process transaction\n");
             Transaction transaction = new Transaction();
             transaction.transactionId = words[1];
             transaction.amount = Integer.parseInt(words[3]);
@@ -137,16 +143,13 @@ class CommandProcessor {
                 }
             }
             transaction.note = words[7];
-            for (int i = 7; i < payer; i++){//TODO
+            for (int i = 7; i < payer; i++){
                 ledger.description += words[i];
             }
-            //process payer at payer+1 and receiver at payer+3
-            ledger.chain.current.accounts.replace(words[payer+1], ledger.getAccountBalance(words[payer+1])-transaction.amount-transaction.fee);//update payer account
-            ledger.chain.current.accounts.replace(words[payer+3], ledger.getAccountBalance(words[payer+3])+transaction.amount);//update receiver account
-            ledger.chain.current.transactions[ledger.chain.current.currentTransaction+1]=transaction;//add transaction to block
-            ledger.chain.current.currentTransaction++;
-            
-            System.out.println(ledger.processTransaction(transaction));
+            //process
+            transaction.payer=words[payer+1];
+            transaction.receiver=words[payer+3];
+            System.out.println("transaction " + ledger.processTransaction(transaction)+ " processed\n");
         }
         if ("get-account-balance".equals(words[0]))
             System.out.println(ledger.getAccountBalance(words[1]));
@@ -189,14 +192,12 @@ class CommandProcessor {
         String words[] = commands.split(" ");
         if ("create-ledger".equals(words[0])) {
             Ledger ledger = new Ledger();
-            System.out.println("ledger created\n");
+            System.out.println("Ledger Created\n");
             ledger.name = words[1];
             int seed = 0;
             for (int i = 0; i < words.length; i++) {
-                if ("seed".equals(words[i])) {
-                    System.out.println("seed\n");
+                if ("seed".equals(words[i]))
                     seed = i;
-                }
             }
             ledger.description = words[3];
             for (int i = 3; i < seed; i++){//TODO CHECK ON ONE WORD DESC
