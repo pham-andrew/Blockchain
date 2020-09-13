@@ -18,6 +18,7 @@ class Transaction {
 
 class Block {
     Transaction[] transactions = new Transaction[10];
+    int currentTransaction=0;
     int blockNumber;
     String previousHash;
     String hash;
@@ -29,7 +30,7 @@ class Block {
     }
 }
 
-//blockchain implemented as a merkle tree
+//blockchain implemented as a linked list
 class BlockChain{
     Block current;
     BlockChain left;
@@ -41,7 +42,7 @@ class Ledger {
     String description;
     String seed;
     BlockChain chain;
-    Block current;
+    Block currentBlock;
     
     //creates first account with address of 0
     void init(Block genesis) {
@@ -49,7 +50,7 @@ class Ledger {
         Account account = new Account();
         account.address="0";
         account.balance=Integer.MAX_VALUE;
-        current.accounts.put("0", 0);//TODO THIS IS WRONG
+        currentBlock.accounts.put("0", 0);//TODO THIS IS WRONG
         //create genesis block
         chain.current=genesis;
     }
@@ -57,17 +58,17 @@ class Ledger {
         Account account = new Account();
         account.address="accountId";
         account.balance=0;
-        current.accounts.put(accountId, 0);
+        currentBlock.accounts.put(accountId, 0);
         return accountId;
     }
     String processTransaction(Transaction transaction) {
         return transaction.transactionId;
     }
     int getAccountBalance(String address) {
-        return (int) current.accounts.get(address);
+        return (int) currentBlock.accounts.get(address);
     }
     Map getAccountBalances() {
-        return current.accounts;
+        return currentBlock.accounts;
     }
     //tree search to find block we need from root
     Block getBlock(int blockNumber) throws LedgerException {
@@ -140,21 +141,22 @@ class CommandProcessor {
             for (int i = 7; i < payer; i++){//TODO
                 ledger.description += words[i];
             }
-            //TODO process payer at payer+1 and receiver at payer+3
-            //System.out.println(ledger.processTransaction(transaction));
+            //process payer at payer+1 and receiver at payer+3
+            ledger.currentBlock.accounts.replace(words[payer+1], ledger.getAccountBalance(words[payer+1])-transaction.amount-transaction.fee);//update payer account
+            ledger.currentBlock.accounts.replace(words[payer+3], ledger.getAccountBalance(words[payer+3])+transaction.amount);//update receiver account
+            ledger.currentBlock.transactions[ledger.currentBlock.currentTransaction+1]=transaction;//add transaction to block
+            ledger.currentBlock.currentTransaction++;
+            
+            System.out.println(ledger.processTransaction(transaction));
         }
-        if ("get-account-balance".equals(words[0])){ 
-            System.out.println("get account balance\n");
-            //ledger.getAccountBalance(words[1]);
-            if ("get-account-balances".equals(words[0])){ 
-                System.out.println("get account balances\n");
-                //System.out.println(ledger.getAccountBalances());
-                if ("get-block".equals(words[0])) {
-                    System.out.println("get block\n");
-                    //ledger.getBlock(Integer.parseInt(words[1]));
-                    //TODO output details for block number
-                }
-            }
+        if ("get-account-balance".equals(words[0]))
+            System.out.println(ledger.getAccountBalance(words[1]));
+        if ("get-account-balances".equals(words[0]))
+            System.out.println(ledger.getAccountBalances());
+        if ("get-block".equals(words[0])) {
+            ledger.getBlock(Integer.parseInt(words[1]));
+            
+            //TODO output details for block number
         }
         if ("get-transaction".equals(words[0])) {
             System.out.println("get transaction\n");
