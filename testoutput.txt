@@ -1,0 +1,59 @@
+cd C:\Users\Andrew\Documents\NetBeansProjects\ledger; "JAVA_HOME=C:\\Program Files\\Java\\jdk-14.0.2" cmd /c "\"C:\\Program Files\\NetBeans-12.0\\netbeans\\java\\maven\\bin\\mvn.cmd\" -Dexec.args=\"-classpath %classpath com.csci97.ledger.TestDriver\" -Dexec.executable=\"C:\\Program Files\\Java\\jdk-14.0.2\\bin\\java.exe\" -Dmaven.ext.class.path=\"C:\\Program Files\\NetBeans-12.0\\netbeans\\java\\maven-nblib\\netbeans-eventspy.jar\" -Dfile.encoding=UTF-8 process-classes org.codehaus.mojo:exec-maven-plugin:1.5.0:exec"
+Scanning for projects...
+
+------------------------< com.mycompany:ledger >------------------------
+Building ledger 1.0-SNAPSHOT
+--------------------------------[ jar ]---------------------------------
+
+--- maven-resources-plugin:2.6:resources (default-resources) @ ledger ---
+Using 'UTF-8' encoding to copy filtered resources.
+skip non existing resourceDirectory C:\Users\Andrew\Documents\NetBeansProjects\ledger\src\main\resources
+
+--- maven-compiler-plugin:3.1:compile (default-compile) @ ledger ---
+Changes detected - recompiling the module!
+Compiling 1 source file to C:\Users\Andrew\Documents\NetBeansProjects\ledger\target\classes
+/C:/Users/Andrew/Documents/NetBeansProjects/ledger/src/main/java/com/csci97/ledger/TestDriver.java: C:\Users\Andrew\Documents\NetBeansProjects\ledger\src\main\java\com\csci97\ledger\TestDriver.java uses unchecked or unsafe operations.
+/C:/Users/Andrew/Documents/NetBeansProjects/ledger/src/main/java/com/csci97/ledger/TestDriver.java: Recompile with -Xlint:unchecked for details.
+
+--- exec-maven-plugin:1.5.0:exec (default-cli) @ ledger ---
+Ledger Created
+
+Account created: plankton
+transaction 1 processed
+
+transaction 2 processed
+
+transaction 3 processed
+
+transaction 4 processed
+
+transaction 5 processed
+
+transaction 6 processed
+
+transaction 7 processed
+
+transaction 8 processed
+
+transaction 9 processed
+
+New block created
+transaction 10 processed
+
+transaction 11 processed
+
+plankton: 220
+plankton: 220
+master: 2147483317
+
+Block Number:0
+Block Hash:816286111908502922-1329711651-2067168305-701348400
+Block Transactions: 1 2 3 4 5 6 7 8 9 10 
+Validated
+
+------------------------------------------------------------------------
+BUILD SUCCESS
+------------------------------------------------------------------------
+Total time:  2.807 s
+Finished at: 2020-09-13T23:56:42-07:00
+------------------------------------------------------------------------
