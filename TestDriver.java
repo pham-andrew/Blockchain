@@ -1,4 +1,4 @@
-package com.csci97.ledger;
+package com.cscie97.ledger;
 
 import java.util.*;
 import java.io.IOException;
@@ -200,6 +200,7 @@ class CommandProcessor {
         if ("get-account-balance".equals(words[0]))
             System.out.println(words[1] +": "+ ledger.getAccountBalance(words[1]));
         if ("get-account-balances".equals(words[0])){
+            @SuppressWarnings("unchecked")
             Map<String, Account> accounts = ledger.getAccountBalances();
             StringBuilder balances = new StringBuilder();
             accounts.entrySet().forEach(entry -> {
@@ -296,6 +297,6 @@ class CommandProcessorException extends Exception{
 public class TestDriver {
     public static void main(String[] args) throws IOException, CommandProcessorException, LedgerException, NoSuchAlgorithmException {
         CommandProcessor cp = new CommandProcessor();
-        cp.processCommandFile("C:\\Users\\Andrew\\Documents\\NetBeansProjects\\ledger\\target\\classes\\com\\csci97\\ledger\\ledger.script");
+        cp.processCommandFile("com/cscie97/ledger/ledger.script");
     }
 }
