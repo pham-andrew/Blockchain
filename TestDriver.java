@@ -12,10 +12,8 @@ class Account {
 
 class Transaction {
     String transactionId;
-    String payer, receiver;
-    int amount;
-    int fee;
-    String note;
+    String payer, receiver, note;
+    int amount, fee;
 }
 
 class Block {
@@ -23,8 +21,7 @@ class Block {
     int currentTransaction=0;
     Map<String, Account> accounts = new HashMap<>();
     int blockNumber;
-    String previousHash;
-    String hash;
+    String previousHash, hash;
     void setBlock(int n, String p, String h){
         blockNumber=n;
         previousHash=p;
@@ -35,14 +32,11 @@ class Block {
 //blockchain implemented as a linked list
 class BlockChain{
     Block current;
-    BlockChain left;
-    BlockChain right;
+    BlockChain left, right;
 }
 
 class Ledger {
-    String name;
-    String description;
-    String seed;
+    String name, description, seed;
     BlockChain chain;
     
     void init(Block genesis) {
@@ -58,16 +52,17 @@ class Ledger {
     
     String createAccount(String accountId) {
         Account account = new Account();
-        account.address="accountId";
+        account.address=accountId;
         account.balance=0;
         chain.current.accounts.put(accountId, account);
         return accountId;
     }
     String processTransaction(Transaction transaction) {
         chain.current.accounts.get(transaction.payer).balance=getAccountBalance(transaction.payer)-transaction.amount-transaction.fee;//update payer account
-        chain.current.accounts.get(transaction.payer).balance=getAccountBalance(transaction.payer)+transaction.amount;//update receiver account
+        chain.current.accounts.get(transaction.receiver).balance=getAccountBalance(transaction.receiver)+transaction.amount;//update receiver account
         chain.current.transactions[chain.current.currentTransaction+1]=transaction;//add transaction to block
         chain.current.currentTransaction++;
+        //TODO ensure they have enough money
         //TODO if on tenth transaction save and create new block
         return transaction.transactionId;
     }
@@ -116,8 +111,7 @@ class Ledger {
 }
 
 class LedgerException extends Exception{
-    String action;
-    String reason;
+    String action, reason;
     LedgerException(String a, String r) {
         action=a;
         reason=r;
@@ -128,10 +122,10 @@ class CommandProcessor {
     //processcommand takes individual commands
     void processCommand(String command, Ledger ledger) throws LedgerException {
         String words[] = command.split(" ");
+        words[words.length-1] = words[words.length-1].replace("\n", "").replace("\r", "");//get rid of newline char
         if ("create-account".equals(words[0])) {
+            ledger.createAccount(words[1]);
             System.out.println("Account created: " + words[1]);
-            Account account = new Account();
-            account.address = words[1];
         }
         if ("process-transaction".equals(words[0])) {
             Transaction transaction = new Transaction();
@@ -139,12 +133,9 @@ class CommandProcessor {
             transaction.amount = Integer.parseInt(words[3]);
             transaction.fee = Integer.parseInt(words[5]);
             int payer = 0;
-            for (int i = 0; i < words.length; i++) {
-                if ("payer".equals(words[i])) {
-                    System.out.println("payer\n");
+            for (int i = 0; i < words.length; i++)
+                if ("payer".equals(words[i]))
                     payer = i;
-                }
-            }
             transaction.note = words[7];
             for (int i = 7; i < payer; i++){
                 ledger.description += words[i];
@@ -164,9 +155,10 @@ class CommandProcessor {
             //TODO output details for block number
         }
         if ("get-transaction".equals(words[0])) {
-            System.out.println("get transaction\n");
-            ledger.getTransaction(words[1]);
-            //TODO output details of transaction id
+            System.out.println("ID: " + ledger.getTransaction(words[1]).transactionId);
+            System.out.println("Payer: " + ledger.getTransaction(words[1]).payer);
+            System.out.println("Receiver: " + ledger.getTransaction(words[1]).receiver);
+            System.out.println("Amount: " +ledger.getTransaction(words[1]).amount);
         }
         if ("validate".equals(words[0])) {
             System.out.println("validate\n");
@@ -196,6 +188,8 @@ class CommandProcessor {
         if ("create-ledger".equals(words[0])) {
             Ledger ledger = new Ledger();
             System.out.println("Ledger Created\n");
+            
+            //parse name, desc, seed
             ledger.name = words[1];
             int seed = 0;
             for (int i = 0; i < words.length; i++) {
@@ -203,9 +197,8 @@ class CommandProcessor {
                     seed = i;
             }
             ledger.description = words[3];
-            for (int i = 3; i < seed; i++){//TODO CHECK ON ONE WORD DESC
+            for (int i = 3; i < seed; i++)//TODO CHECK ON ONE WORD DESC
                 ledger.description += words[i];
-            }
             ledger.seed = words[seed + 1];
             
             //initialize the blockchain
@@ -225,8 +218,7 @@ class CommandProcessor {
 }
 
 class CommandProcessorException extends Exception{
-    String command;
-    String reason;
+    String command, reason;
     int lineNumber;
     public CommandProcessorException(String c, String r, int l){
         command = c;
