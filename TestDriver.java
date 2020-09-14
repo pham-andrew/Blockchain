@@ -30,6 +30,7 @@ class Block {
     }
 }
 
+//structure to keep track of leaf blocks
 class BlockChainLink{
     Block current;
     BlockChainLink left, right;
@@ -47,6 +48,7 @@ class Ledger {
         //create genesis block
         link = new BlockChainLink();
         link.current=genesis;
+        link.current.blockNumber=0;
         link.current.accounts.put("master", account);
     }
     
@@ -61,15 +63,36 @@ class Ledger {
         //TODO ensure they have enough money
         link.current.accounts.get(transaction.payer).balance=getAccountBalance(transaction.payer)-transaction.amount-transaction.fee;//update payer account
         link.current.accounts.get(transaction.receiver).balance=getAccountBalance(transaction.receiver)+transaction.amount;//update receiver account
-        link.current.transactions[link.current.currentTransaction+1]=transaction;//add transaction to block
+        link.current.transactions[link.current.currentTransaction]=transaction;//add transaction to block
         link.current.currentTransaction++;
         //if on tenth transaction save and create new block
-        if(link.current.currentTransaction==9){
-            link.current.hash = Integer.toString(Arrays.hashCode(link.current.transactions));
+        if(link.current.currentTransaction==10){
+            //create and save hash with merkle tree
+            String[] leafHashes = new String[10];
+            for(int i=0;i<10;i++)
+                leafHashes[i] = Integer.toString(link.current.transactions[i].hashCode());
+            String[] branchHashes = new String[5];
+            int j=0;
+            for(int i=0;i<5;i++){
+                branchHashes[i] = leafHashes[j]+leafHashes[j+1].hashCode();
+                j+=2;
+            }
+            String[] branchHashes2 = new String[3];
+            branchHashes2[0] = branchHashes[0]+branchHashes[1].hashCode();
+            branchHashes2[1] = branchHashes[2]+branchHashes[3].hashCode();
+            branchHashes2[2] = branchHashes[4]+branchHashes[4].hashCode();
+            String[] branchHashes3 = new String[2];
+            branchHashes3[0] = branchHashes2[0]+branchHashes2[1].hashCode();
+            branchHashes3[1] = branchHashes2[2]+branchHashes2[2].hashCode();
+            String rootHash = branchHashes3[0]+branchHashes3[1].hashCode();
+            link.current.hash = rootHash;
+            
+            //create next link
             BlockChainLink newLink = new BlockChainLink();
             //copy over info from old block except transactions
             newLink.current = link.current;
             newLink.current.previousHash=link.current.hash;
+            newLink.current.blockNumber++;
             //clear transactions for new link
             newLink.current.currentTransaction = 0;
             newLink.current.transactions = new Transaction[10];
@@ -86,13 +109,9 @@ class Ledger {
     Map getAccountBalances() {
         return link.current.accounts;
     }
-    //tree search to find block we need from root
+    //returns block by blocknumber
     Block getBlock(int blockNumber) throws LedgerException {
-        //create the merkle tree
-        
-        //get the block we need
-        if (link.current.blockNumber==blockNumber)
-                return link.current;
+
         return getBlock(blockNumber, link);
     }
     //recursive function to search down the tree
