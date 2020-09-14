@@ -146,9 +146,15 @@ class CommandProcessor {
             System.out.println("transaction " + ledger.processTransaction(transaction)+ " processed\n");
         }
         if ("get-account-balance".equals(words[0]))
-            System.out.println(ledger.getAccountBalance(words[1]));
-        if ("get-account-balances".equals(words[0]))
-            System.out.println(ledger.getAccountBalances());
+            System.out.println(words[1] +": "+ ledger.getAccountBalance(words[1]));
+        if ("get-account-balances".equals(words[0])){
+            Map<String, Account> accounts = ledger.getAccountBalances();
+            StringBuilder balances = new StringBuilder();
+            accounts.entrySet().forEach(entry -> {
+                balances.append(entry.getValue().address).append(": ").append(entry.getValue().balance).append("\n");
+            });
+            System.out.println(balances.toString());
+        }
         if ("get-block".equals(words[0])) {
             ledger.getBlock(Integer.parseInt(words[1]));
             
