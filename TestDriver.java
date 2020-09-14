@@ -43,6 +43,7 @@ class BlockChainLink{
 class Ledger {
     String name, description, seed;
     BlockChainLink link;
+    Map<String, Transaction> masterTransactionList = new HashMap<String, Transaction>();
     
     //initializes the ledger
     void init(Block genesis) {
@@ -68,12 +69,20 @@ class Ledger {
     
     //does math for transaction and creates,links,hashes blocks when they reach 10 transactions
     String processTransaction(Transaction transaction) throws LedgerException, NoSuchAlgorithmException {
+        //check if sufficient funds
         if(link.current.accounts.get(transaction.payer).balance-transaction.amount-transaction.fee<0)
-            throw new LedgerException("processTransaction", "not enough funds"); 
+            //throw new LedgerException("processTransaction", "not enough funds"); 
+            return "not";
+        //check for minimum fee
+        if(transaction.fee<10)
+            //throw new LedgerException("processTransaction", "not enough fee");
+            return "not";
+        //perform transaction
         link.current.accounts.get(transaction.payer).balance=getAccountBalance(transaction.payer)-transaction.amount-transaction.fee;//update payer account
         link.current.accounts.get(transaction.receiver).balance=getAccountBalance(transaction.receiver)+transaction.amount;//update receiver account
         link.current.transactions[link.current.currentTransaction]=transaction;//add transaction to block
         link.current.currentTransaction++;
+        masterTransactionList.put(transaction.transactionId, transaction);
         //if on tenth transaction save and create new block
         if(link.current.currentTransaction==10){
             //create and save hash with merkle tree
@@ -141,22 +150,8 @@ class Ledger {
     }
     
     //returns transaction by id
-    Transaction getTransaction(String transactionId) throws LedgerException {
-        for(int i=0;i<10;i++)
-            if(link.current.transactions[i].transactionId.equals(transactionId))
-                return link.current.transactions[i];
-        return getTransaction(transactionId, link);
-    }
-    //recursive search for transaction
-    Transaction getTransaction(String transactionId, BlockChainLink b) throws LedgerException{
-        for(int i=0;i<10;i++)
-            if(link.current.transactions[i].transactionId.equals(transactionId))
-                return link.current.transactions[i];
-        if(b.left!=null)
-            return getTransaction(transactionId, b.left);
-        if(b.right!=null)
-            return getTransaction(transactionId, b.right);
-        throw new LedgerException("getBlock", "cant find transaction");
+    Transaction getTransaction(String transactionId) {
+        return masterTransactionList.get(transactionId);
     }
     
     //ensure account balances correct, ensure each block has 10 transactions
@@ -215,14 +210,18 @@ class CommandProcessor {
         if ("get-block".equals(words[0])) {
             Block block = ledger.getBlock(Integer.parseInt(words[1]));
             System.out.println("Block Number:" + block.blockNumber);
-            System.out.println("Block Hash:" + block.hash);
-            System.out.print("Block Transactions: ");
-            for(int i=0;i<10;i++)
-                System.out.print(block.transactions[i].transactionId+" ");
-            System.out.println();
+            if(block.currentTransaction<9)
+                System.out.println("Block is not complete yet");
+            else{
+                System.out.println("Block Hash:" + block.hash);
+                System.out.print("Block Transactions: ");
+                for(int i=0;i<block.transactions.length-1;i++)
+                    System.out.print(block.transactions[i].transactionId+" ");
+                System.out.println();
+            }
         }
         if ("get-transaction".equals(words[0])) {
-            System.out.println("ID: " + ledger.getTransaction(words[1]).transactionId);
+            System.out.println("Transaction Details\nID: " + ledger.getTransaction(words[1]).transactionId);
             System.out.println("Payer: " + ledger.getTransaction(words[1]).payer);
             System.out.println("Receiver: " + ledger.getTransaction(words[1]).receiver);
             System.out.println("Amount: " +ledger.getTransaction(words[1]).amount);
@@ -297,6 +296,6 @@ class CommandProcessorException extends Exception{
 public class TestDriver {
     public static void main(String[] args) throws IOException, CommandProcessorException, LedgerException, NoSuchAlgorithmException {
         CommandProcessor cp = new CommandProcessor();
-        cp.processCommandFile("C:\\Users\\Andrew\\Documents\\NetBeansProjects\\ledger\\target\\classes\\com\\csci97\\ledger\\testinput.txt");
+        cp.processCommandFile("C:\\Users\\Andrew\\Documents\\NetBeansProjects\\ledger\\target\\classes\\com\\csci97\\ledger\\ledger.script");
     }
 }
