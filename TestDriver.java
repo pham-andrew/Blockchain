@@ -1,13 +1,10 @@
 package com.csci97.ledger;
 
-import java.util.Map;
+import java.util.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.security.*;
 
 //structure holding bank account balances
 class Account {
@@ -163,8 +160,10 @@ class Ledger {
     }
     
     //ensure account balances correct, ensure each block has 10 transactions
-    void validate() {
-           
+    void validate() throws LedgerException {
+        for(int i=0;i<link.current.currentTransaction-1;i++)
+            if(getBlock(i).currentTransaction!=9)//ensure each block has 10 transactions
+                throw new LedgerException("validate", "some block has more than 10 transactions");
     }
 }
 
@@ -201,7 +200,7 @@ class CommandProcessor {
             //process
             transaction.payer=words[payer+1];
             transaction.receiver=words[payer+3];
-            System.out.println("transaction " + ledger.processTransaction(transaction)+ " processed\n");
+            System.out.println("Transaction " + ledger.processTransaction(transaction)+ " processed\n");
         }
         if ("get-account-balance".equals(words[0]))
             System.out.println(words[1] +": "+ ledger.getAccountBalance(words[1]));
