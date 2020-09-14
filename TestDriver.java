@@ -90,7 +90,8 @@ class Ledger {
             //create next link
             BlockChainLink newLink = new BlockChainLink();
             //copy over info from old block except transactions
-            newLink.current = link.current;
+            newLink.current = new Block();
+            newLink.current.accounts=link.current.accounts;
             newLink.current.previousHash=link.current.hash;
             newLink.current.blockNumber++;
             //clear transactions for new link
@@ -111,16 +112,16 @@ class Ledger {
     }
     //returns block by blocknumber
     Block getBlock(int blockNumber) throws LedgerException {
-
         return getBlock(blockNumber, link);
     }
     //recursive function to search down the tree
     Block getBlock(int blockNumber, BlockChainLink b) throws LedgerException{
         if(b.current.blockNumber==blockNumber)
             return b.current;
-        if(b.left!=null)
+        System.out.println(b.current.blockNumber);
+        if(b.left!=null && b.current.blockNumber>blockNumber)
             return getBlock(blockNumber, b.left);
-        if(b.right!=null)
+        if(b.right!=null && b.current.blockNumber<blockNumber)
             return getBlock(blockNumber, b.right);
         throw new LedgerException("getBlock", "cant find block number");
     }
@@ -192,8 +193,8 @@ class CommandProcessor {
             System.out.println(balances.toString());
         }
         if ("get-block".equals(words[0])) {
-            ledger.getBlock(Integer.parseInt(words[1]));
-            
+            Block block = ledger.getBlock(Integer.parseInt(words[1]));
+            System.out.println("Block Transactions: " + Arrays.toString(block.transactions));
             //TODO output details for block number
         }
         if ("get-transaction".equals(words[0])) {
