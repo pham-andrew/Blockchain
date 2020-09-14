@@ -1,4 +1,4 @@
-This file is here to prove that the code compiles with the command javac com/cscie97/ledger/*.java and runs "out of the box" with the correct command and input file supplied with the assignment...
+This file is here to prove that the code compiles with the command javac com/cscie97/ledger/*.java and runs "out of the box" with the correct command and input file supplied with the assignment, ledger.script
 
 C:\Users\Andrew\Documents\NetBeansProjects\ledger\src\main\java>javac com/cscie97/ledger/*.java
 
