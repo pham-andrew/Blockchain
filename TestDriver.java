@@ -194,8 +194,12 @@ class CommandProcessor {
         }
         if ("get-block".equals(words[0])) {
             Block block = ledger.getBlock(Integer.parseInt(words[1]));
-            System.out.println("Block Transactions: " + Arrays.toString(block.transactions));
-            //TODO output details for block number
+            System.out.println("Block Number:" + block.blockNumber);
+            System.out.println("Block Hash:" + block.hash);
+            System.out.print("Block Transactions: ");
+            for(int i=0;i<10;i++)
+                System.out.print(block.transactions[i].transactionId+" ");
+            System.out.println();
         }
         if ("get-transaction".equals(words[0])) {
             System.out.println("ID: " + ledger.getTransaction(words[1]).transactionId);
