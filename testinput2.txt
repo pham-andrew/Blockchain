@@ -1,0 +1,43 @@
+create-ledger test2 description “meh?? meh” seed “genuis”
+
+create-account andrew
+
+process-transaction 1 amount 2 fee 10 note “wow kewl” payer master receiver andrew
+process-transaction 2 amount 3 fee 10 note “wow kewl” payer master receiver andrew
+process-transaction 3 amount 45 fee 10 note “wow kewl” payer master receiver andrew
+process-transaction 4 amount 54 fee 10 note “wow kewl” payer master receiver andrew
+process-transaction 5 amount 245 fee 10 note “wow kewl” payer master receiver andrew
+process-transaction 6 amount 235 fee 10 note “wow kewl” payer master receiver andrew
+process-transaction 7 amount 23 fee 10 note “wow kewl” payer master receiver andrew
+process-transaction 8 amount 0 fee 10 note “wow kewl” payer master receiver andrew
+process-transaction 9 amount 1110 fee 10 note “wow kewl” payer master receiver andrew
+process-transaction 10 amount 20 fee 10 note “wow kewl” payer master receiver andrew
+process-transaction 11 amount 50 fee 10 note “wow kewl” payer master receiver andrew
+
+get-account-balance andrew
+
+get-account-balances
+
+get-block 0
+
+validate
+
+create-account studentloans
+
+process-transaction 12 amount 1000 fee 10 note “all your money” payer andrew receiver studentloans
+
+get-account-balance andrew
+
+create-account someotherbank
+
+create-account thirdaccount
+
+get-account-balances
+
+process-transaction 13 amount 1000 fee 10 note “some for you” payer master receiver someotherbank
+
+process-transaction 14 amount 120 fee 10 note “and you” payer master receiver thirdaccount
+
+get-account-balances
+
+process-transaction 15 amount 120 fee 10 note “everbody gets some” payer someotherbank receiver thirdaccount
