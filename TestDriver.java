@@ -3,6 +3,7 @@ package com.csci97.ledger;
 import java.util.Map;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.Arrays;
 import java.util.HashMap;
 
 class Account {
@@ -29,15 +30,14 @@ class Block {
     }
 }
 
-//blockchain implemented as a linked list
-class BlockChain{
+class BlockChainLink{
     Block current;
-    BlockChain left, right;
+    BlockChainLink left, right;
 }
 
 class Ledger {
     String name, description, seed;
-    BlockChain chain;
+    BlockChainLink link;
     
     void init(Block genesis) {
         //create master account
@@ -45,41 +45,58 @@ class Ledger {
         account.address="master";
         account.balance=Integer.MAX_VALUE;
         //create genesis block
-        chain = new BlockChain();
-        chain.current=genesis;
-        chain.current.accounts.put("master", account);
+        link = new BlockChainLink();
+        link.current=genesis;
+        link.current.accounts.put("master", account);
     }
     
     String createAccount(String accountId) {
         Account account = new Account();
         account.address=accountId;
         account.balance=0;
-        chain.current.accounts.put(accountId, account);
+        link.current.accounts.put(accountId, account);
         return accountId;
     }
     String processTransaction(Transaction transaction) {
-        chain.current.accounts.get(transaction.payer).balance=getAccountBalance(transaction.payer)-transaction.amount-transaction.fee;//update payer account
-        chain.current.accounts.get(transaction.receiver).balance=getAccountBalance(transaction.receiver)+transaction.amount;//update receiver account
-        chain.current.transactions[chain.current.currentTransaction+1]=transaction;//add transaction to block
-        chain.current.currentTransaction++;
         //TODO ensure they have enough money
-        //TODO if on tenth transaction save and create new block
+        link.current.accounts.get(transaction.payer).balance=getAccountBalance(transaction.payer)-transaction.amount-transaction.fee;//update payer account
+        link.current.accounts.get(transaction.receiver).balance=getAccountBalance(transaction.receiver)+transaction.amount;//update receiver account
+        link.current.transactions[link.current.currentTransaction+1]=transaction;//add transaction to block
+        link.current.currentTransaction++;
+        //if on tenth transaction save and create new block
+        if(link.current.currentTransaction==9){
+            link.current.hash = Integer.toString(Arrays.hashCode(link.current.transactions));
+            BlockChainLink newLink = new BlockChainLink();
+            //copy over info from old block except transactions
+            newLink.current = link.current;
+            newLink.current.previousHash=link.current.hash;
+            //clear transactions for new link
+            newLink.current.currentTransaction = 0;
+            newLink.current.transactions = new Transaction[10];
+            link.right = newLink;
+            newLink.left = link;
+            link = newLink;
+            System.out.println("New block created");
+        }
         return transaction.transactionId;
     }
     int getAccountBalance(String address) {
-        return chain.current.accounts.get(address).balance;
+        return link.current.accounts.get(address).balance;
     }
     Map getAccountBalances() {
-        return chain.current.accounts;
+        return link.current.accounts;
     }
     //tree search to find block we need from root
     Block getBlock(int blockNumber) throws LedgerException {
-        if (chain.current.blockNumber==blockNumber)
-                return chain.current;
-        return getBlock(blockNumber, chain);
+        //create the merkle tree
+        
+        //get the block we need
+        if (link.current.blockNumber==blockNumber)
+                return link.current;
+        return getBlock(blockNumber, link);
     }
     //recursive function to search down the tree
-    Block getBlock(int blockNumber, BlockChain b) throws LedgerException{
+    Block getBlock(int blockNumber, BlockChainLink b) throws LedgerException{
         if(b.current.blockNumber==blockNumber)
             return b.current;
         if(b.left!=null)
@@ -91,14 +108,14 @@ class Ledger {
     
     Transaction getTransaction(String transactionId) throws LedgerException {
         for(int i=0;i<10;i++)
-            if(chain.current.transactions[i].transactionId.equals(transactionId))
-                return chain.current.transactions[i];
-        return getTransaction(transactionId, chain);
+            if(link.current.transactions[i].transactionId.equals(transactionId))
+                return link.current.transactions[i];
+        return getTransaction(transactionId, link);
     }
-    Transaction getTransaction(String transactionId, BlockChain b) throws LedgerException{
+    Transaction getTransaction(String transactionId, BlockChainLink b) throws LedgerException{
         for(int i=0;i<10;i++)
-            if(chain.current.transactions[i].transactionId.equals(transactionId))
-                return chain.current.transactions[i];
+            if(link.current.transactions[i].transactionId.equals(transactionId))
+                return link.current.transactions[i];
         if(b.left!=null)
             return getTransaction(transactionId, b.left);
         if(b.right!=null)
@@ -167,7 +184,7 @@ class CommandProcessor {
             System.out.println("Amount: " +ledger.getTransaction(words[1]).amount);
         }
         if ("validate".equals(words[0])) {
-            System.out.println("validate\n");
+            System.out.println("validating...\n");
             ledger.validate();
         }
     }
