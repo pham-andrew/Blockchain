@@ -1,3 +1,6 @@
+//ledger
+//andrew pham anp6338@g.harvard.edu
+
 package com.cscie97.ledger;
 
 import java.util.*;
@@ -156,9 +159,26 @@ class Ledger {
     
     //ensure account balances correct, ensure each block has 10 transactions
     void validate() throws LedgerException {
+        //ensure each block has 10 transactions
         for(int i=0;i<link.current.currentTransaction-1;i++)
             if(getBlock(i).currentTransaction!=9)//ensure each block has 10 transactions
                 throw new LedgerException("validate", "some block has more than 10 transactions");
+        //ensure account balances are correct
+        Map<String, Account> accountsCopy = new HashMap<>();
+        accountsCopy.putAll(link.current.accounts);
+        //zero out all accounts and max out master
+        accountsCopy.entrySet().forEach(entry -> {
+            entry.getValue().balance=0;
+        });
+        accountsCopy.get("master").balance=Integer.MAX_VALUE;
+        //do all transaction in master transaction list over
+        for (Map.Entry<String, Transaction> entry : masterTransactionList.entrySet()){
+            accountsCopy.get(entry.getValue().receiver).balance+=entry.getValue().amount;
+            accountsCopy.get(entry.getValue().payer).balance-=entry.getValue().amount+entry.getValue().fee;
+        }
+        //check to see it the copy matches the original
+        if(!accountsCopy.equals(link.current.accounts))
+            throw new LedgerException("validate", "accounts dont add up...");
     }
 }
 
@@ -214,7 +234,7 @@ class CommandProcessor {
             if(block.currentTransaction<9)
                 System.out.println("Block is not complete yet");
             else{
-                System.out.println("Block Hash:" + block.hash);
+                System.out.println("Block Hash: " + block.hash);
                 System.out.print("Block Transactions: ");
                 for(int i=0;i<block.transactions.length-1;i++)
                     System.out.print(block.transactions[i].transactionId+" ");
