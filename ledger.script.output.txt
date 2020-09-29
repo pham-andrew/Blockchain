@@ -1,0 +1,113 @@
+cd C:\Users\Andrew\Documents\NetBeansProjects\ledger; "JAVA_HOME=C:\\Program Files\\Java\\jdk-14.0.2" cmd /c "\"C:\\Program Files\\NetBeans-12.0\\netbeans\\java\\maven\\bin\\mvn.cmd\" -Dexec.args=\"-classpath %classpath com.csci97.ledger.TestDriver\" -Dexec.executable=\"C:\\Program Files\\Java\\jdk-14.0.2\\bin\\java.exe\" -Dmaven.ext.class.path=\"C:\\Program Files\\NetBeans-12.0\\netbeans\\java\\maven-nblib\\netbeans-eventspy.jar\" -Dfile.encoding=UTF-8 process-classes org.codehaus.mojo:exec-maven-plugin:1.5.0:exec"
+Scanning for projects...
+
+------------------------< com.mycompany:ledger >------------------------
+Building ledger 1.0-SNAPSHOT
+--------------------------------[ jar ]---------------------------------
+
+--- maven-resources-plugin:2.6:resources (default-resources) @ ledger ---
+Using 'UTF-8' encoding to copy filtered resources.
+skip non existing resourceDirectory C:\Users\Andrew\Documents\NetBeansProjects\ledger\src\main\resources
+
+--- maven-compiler-plugin:3.1:compile (default-compile) @ ledger ---
+Changes detected - recompiling the module!
+Compiling 1 source file to C:\Users\Andrew\Documents\NetBeansProjects\ledger\target\classes
+/C:/Users/Andrew/Documents/NetBeansProjects/ledger/src/main/java/com/csci97/ledger/TestDriver.java: C:\Users\Andrew\Documents\NetBeansProjects\ledger\src\main\java\com\csci97\ledger\TestDriver.java uses unchecked or unsafe operations.
+/C:/Users/Andrew/Documents/NetBeansProjects/ledger/src/main/java/com/csci97/ledger/TestDriver.java: Recompile with -Xlint:unchecked for details.
+
+--- exec-maven-plugin:1.5.0:exec (default-cli) @ ledger ---
+Ledger Created
+
+Account created: mary
+Account created: bob
+Account created: bill
+Account created: frank
+Account created: jane
+mary: 0
+Transaction 1 processed
+
+Transaction 2 processed
+
+Transaction 3 processed
+
+Transaction 4 processed
+
+Transaction 5 processed
+
+mary: 2000
+frank: 1000
+bob: 1000
+mary: 2000
+bill: 1000
+master: 2147478597
+jane: 0
+
+Transaction 6 processed
+
+Transaction 7 processed
+
+Transaction 8 processed
+
+Transaction 9 processed
+
+New block created
+Transaction 10 processed
+
+mary: 3000
+bob: 3000
+bill: 2000
+frank: 2000
+jane: 0
+Block Number:1
+Block is not complete yet
+Transaction Details
+ID: 10
+Payer: master
+Receiver: bob
+Amount: 1000
+Transaction 11 processed
+
+frank: 1790
+jane: 200
+Transaction 12 processed
+
+Transaction 13 processed
+
+Transaction 14 processed
+
+Transaction 15 processed
+
+Transaction 16 processed
+
+Transaction 17 processed
+
+Transaction 18 processed
+
+Transaction 19 processed
+
+New block created
+Transaction 20 processed
+
+jane: 200
+frank: 1790
+mary: 3180
+mary: 3180
+frank: 1790
+bob: 2730
+mary: 3180
+bill: 2000
+master: 2147473547
+jane: 200
+
+Transaction not processed
+
+Transaction not processed
+
+Validated
+
+------------------------------------------------------------------------
+BUILD SUCCESS
+------------------------------------------------------------------------
+Total time:  2.978 s
+Finished at: 2020-09-14T01:12:48-07:00
+------------------------------------------------------------------------
