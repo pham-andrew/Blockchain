@@ -8,14 +8,22 @@ class Event{
 class Device{
 	String microphone, camera;
 	int thermometer, co2meter;
-	List getSensorData(){
+	List<String> getSensorData(){
+		List<String> data = new List();
+		data.add(microphone);
+		data.add(camera);
+		data.add(Integer.toString(thermometer))
+		data.add(Integer.toString(co2meter))
+		return data;
 	}
 	void command(String command){
 	}
 }
 
 class Simulator{
-	Event simulateEvent(String command){
+	void simulateEvent(String command){
+		Event e = new Event();
+		//TODO
 	}
 }
 
