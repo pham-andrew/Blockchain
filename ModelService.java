@@ -12,8 +12,8 @@ class Device{
 		List<String> data = new List();
 		data.add(microphone);
 		data.add(camera);
-		data.add(Integer.toString(thermometer))
-		data.add(Integer.toString(co2meter))
+		data.add(Integer.toString(thermometer));
+		data.add(Integer.toString(co2meter));
 		return data;
 	}
 	void command(String command){
