@@ -72,7 +72,8 @@ class Controller {
 	void command(String command){
 		String words[] = command.split(" ");
         words[words.length-1] = words[words.length-1].replace("\n", "").replace("\r", "");//get rid of newline char
-        //todo parse words
+	if ("define".equals(words[0]) && "city".equals(words[1])) {
+		
 	}
 	void event(Event e){
 	}
