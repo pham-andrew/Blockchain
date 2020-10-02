@@ -81,7 +81,7 @@ class Controller {
         words[words.length-1] = words[words.length-1].replace("\n", "").replace("\r", "");//get rid of newline char
 	if ("define".equals(words[0]) && "city".equals(words[1])) {
 		City c = new City();
-		c.setInfo(words[2], words[4], words[6], Pair<double, double> pair = new Pair<>(Integer.parseInt(words[8]), Integer.parseInt(words[10]));, words[12]);
+		c.setInfo(words[2], words[4], words[6], new Pair<double, double>(Integer.parseInt(words[8]), Integer.parseInt(words[10]));, words[12]);
 		cities.put(words[2], c);
 	}
 	if ("show".equals(words[0]) && "city".equals(words[1])) {
@@ -91,7 +91,7 @@ class Controller {
 		VirtualDevice d = new VirtualDevice();
 		//todo words[2] is city
 		//todo everything after : in words[2] is device id
-		d.defVDevice(words[1], words[2], Pair<double, double> pair = new Pair<>(Integer.parseInt(words[5]), Integer.parseInt(words[7]));, words[9]);
+		d.defVDevice(words[1], words[2], new Pair<double, double>(Integer.parseInt(words[5]), Integer.parseInt(words[7]));, words[9]);
 		d.setState(words[10], )//TODO BUILD STRING OF TEXT FROM END
 	}
 	void event(Event e){
