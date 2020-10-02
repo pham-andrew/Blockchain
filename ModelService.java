@@ -1,6 +1,8 @@
 //model service
 //andrew pham anp6338@g.harvard.edu
 
+import java.util.HashMap;
+
 class Event{
 	String type, action subject;
 }
@@ -38,6 +40,10 @@ class VirtualDevice(){
 	}
 	void event(Event e){
 	}
+	void defVDevice(String t, String i, Pair l, boolean enabled){
+	}
+	void setState(String attribute, String value){
+	}
 }
 
 class City{
@@ -49,7 +55,8 @@ class City{
 	List visitors = new ArrayList();
 	List getInfo(){
 	}
-	void setInfo(List l){
+	void setInfo(String i, String n, String a, Pair l, int r){
+		id=i; name=n; account=a; location=l; radius=r;
 	}
 	void command(String command){
 	}
@@ -68,12 +75,24 @@ class Person{
 }
 
 class Controller {
-	List cities = new ArrayList();
+	Hashmap<Integer, City> cities = new Hashmap();
 	void command(String command){
 		String words[] = command.split(" ");
         words[words.length-1] = words[words.length-1].replace("\n", "").replace("\r", "");//get rid of newline char
 	if ("define".equals(words[0]) && "city".equals(words[1])) {
-		
+		City c = new City();
+		c.setInfo(words[2], words[4], words[6], Pair<double, double> pair = new Pair<>(Integer.parseInt(words[8]), Integer.parseInt(words[10]));, words[12]);
+		cities.put(words[2], c);
+	}
+	if ("show".equals(words[0]) && "city".equals(words[1])) {
+		System.out.println(cities.get(words[2]).getInfo());
+	}
+	if ("define".equals(words[0])) {
+		VirtualDevice d = new VirtualDevice();
+		//todo words[2] is city
+		//todo everything after : in words[2] is device id
+		d.defVDevice(words[1], words[2], Pair<double, double> pair = new Pair<>(Integer.parseInt(words[5]), Integer.parseInt(words[7]));, words[9]);
+		d.setState(words[10], )//TODO BUILD STRING OF TEXT FROM END
 	}
 	void event(Event e){
 	}
