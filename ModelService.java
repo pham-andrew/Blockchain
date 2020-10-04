@@ -97,9 +97,10 @@ class Controller {
 			//people
 			else if("resident".equals(words[1]) || "visitor".equals(words[1])){
 				Person r = new Person();
+				cities.get(words[2]).people.put(words[3], r);//assign person to city
 				//set attributes
-				r.id=words[2];
-				for(int i=3;i<words.length;i+=2)
+				r.id=words[3];
+				for(int i=4;i<words.length;i+=2)
 					r.attributes.put(words[i], words[i+1]);
 				//set isResident
 				if("visitor".equals(words[1]))
@@ -126,8 +127,8 @@ class Controller {
 		if ("update".equals(words[0]))
 			//person
 			if("resident".equals(words[1]) || "visitor".equals(words[1]))
-				for(int i=5;i<words.length;i+=2)
-					cities.get(words[2]).people.get(words[3]).attributes.put(words[i], words[i+1]);
+				for(int i=4;i<words.length;i+=2)
+					cities.get(words[2]).people.get(words[3]).attributes.put(words[i], words[i+1]);		
 			//device
 			else
 				//store first token as key in device state, second as value, repeat
@@ -159,7 +160,8 @@ public class ModelService {
         //process each line
         Controller c = new Controller();
         for (String line : lines){
-        	System.out.println(line);
+        	if(line.length()>1)//if not empty
+        		System.out.println(line);//print command to console
         	c.command(line);
         }
     }
