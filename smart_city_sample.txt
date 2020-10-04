@@ -1,5 +1,5 @@
 # Sample script for the Smart City Model Service. 
-# Syntax has been adjusted
+# Syntax has been adjusted: no colons, people have city identifies which they belong to
 #
 # City Commands
 # Define a city
@@ -23,8 +23,8 @@ define street-sign city_1 ss_2 lat 42.3736 long -71.1214 enabled  true  text "Br
 # update a street sign  
 # update street-sign <city_id> <device_id> [enabled (true|false)] [text <text>]
 
-update street-sign city_1 ss_1  text "The time is now 9 00 pm"
-update street-sign city_1 ss_2  text "Now playing, Cassablaca"
+update street-sign city_1 ss_1 text "The time is now 9 00 pm"
+update street-sign city_1 ss_2 text "Now playing, Cassablaca"
 
 
 # Define an information kiosk  
@@ -121,27 +121,27 @@ create sensor-output city_1 speaker value "severe weather alert, please take she
 
 # Person Commands
 # Define a new Resident 
-# define resident <person_id> name <name> bio-metric <string> phone <phone_number> role (adult|child|administrator) lat <lat> long <long> account <account_address>
+# define resident <city_id> <person_id> name <name> bio-metric <string> phone <phone_number> role (adult|child|administrator) lat <lat> long <long> account <account_address>
 
-define resident resident_1 name jane bio-metric "voice-print='voiceprint-jane',face-print='faceprint-jane'" phone 781-222-3344 role adult lat 42.3735 long -71.1205 account janes_account
+define resident city_1 resident_1 name jane bio-metric "voice-print='voiceprint-jane',face-print='faceprint-jane'" phone 781-222-3344 role adult lat 42.3735 long -71.1205 account janes_account
 
 
 # Update a Resident 
 # update resident <person_id> [name <name>] [bio-metric <string>] [phone <phone_number>] [role (adult|child|administrator)] [lat <lat> long <long>] [account <account_address>]
 
-update resident resident_1 name jane lat 42.3830 long -71.1125  
+update resident city_1 resident_1 name jane lat 42.3830 long -71.1125  
 
 
 # Define a new Visitor 
 # define visitor <person_id> bio-metric <string> lat <lat> long <long>
 
-define visitor visitor_1 bio-metric "iris-print='irisprint-visitor_1'" lat 42.3744 long -71.1203 
+define visitor city_1 visitor_1 bio-metric "iris-print='irisprint-visitor_1'" lat 42.3744 long -71.1203 
 
 
 # Update a Visitor 
 # update visitor <person_id> [bio-metric <string>] [lat <lat> long <long>]
 
-update visitor visitor_1  lat 42.3830 long -71.1125
+update visitor city_1 visitor_1  lat 42.3830 long -71.1125
 
 
 # Show the details of the person
