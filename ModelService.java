@@ -32,8 +32,7 @@ class Simulator{
 class VirtualDevice(){
 	String id, type, event;
 	Pair<double, double> location;
-	boolean status, enabled; //TODO INCORPERATE INTO STATE
-	Hashmap<String, String> state;
+	Hashmap<String, String> state;//state also records required attributes status and enabled
 	Device d;
 	Simulator s;
 	void command(String command){
@@ -51,8 +50,7 @@ class City{
 	Pair<double, double> location;
 	int radius;
 	List vDevices = new ArrayList();
-	List residents = new ArrayList();
-	List visitors = new ArrayList();
+	List people = new ArrayList();
 	List getInfo(){
 	}
 	void setInfo(String i, String n, String a, Pair l, int r){
@@ -65,13 +63,8 @@ class City{
 }
 
 class Person{
-	String id, bMetric, name, role, account;
-	int phoneNumber;
-	Pair<double, double> location;
-	List getInfo(){
-	}
-	List setInfo(List l){
-	}
+	HashMap<String, String> attributes;
+	Boolean isResident;
 }
 
 class Controller {
@@ -83,16 +76,6 @@ class Controller {
 		while (m.find())
     		list.add(m.group(1));
 		words[words.length-1] = words[words.length-1].replace("\n", "").replace("\r", "");//get rid of newline char
-		
-		//show
-		if ("show".equals(words[0])) {
-			if("city".equals(words[1])){
-				System.out.println(cities.get(words[2]).getInfo());
-			}
-			if("person".equals(words[1])){
-				
-			}
-		}
 		//define
 		if ("define".equals(words[0])) {
 			//city
@@ -102,9 +85,16 @@ class Controller {
 				cities.put(words[2], c);
 			}
 			//people
-			else if("resident".equals(words[1])){
-			}
-			else if("visitor".equals(words[1])){
+			else if("resident".equals(words[1]) || "visitor".equals(words[1])){
+				Person r = new Person();
+				//set attributes
+				for(int i=2;i<words.length;i+=2)
+					r.attributes.put(words[i], words[i+1]);
+				//set isResident
+				if("resident".equals(words[1]))
+					r.isResident=true;
+				if("visitor".equals(words[1]))
+					r.isResident=false;
 			}
 			//devices
 			else{
@@ -114,13 +104,18 @@ class Controller {
 				d.setState("text", words[11]);
 			}
 		}
+		//show
+		if ("show".equals(words[0])) {
+			if("city".equals(words[1]))
+				System.out.println(cities.get(words[2]).getInfo());
+			if("person".equals(words[1]))
+				System.out.println(cities.get(words[2]).people.get(words[3]));
+		}
 		//update
-		if ("update".equals(words[0])) {
+		if ("update".equals(words[0]))
 			//store first token as key in device state, second as value, repeat
 			for(int i=1;i<words.length;i+=2){
-				cities.get(words[2]).vDevices.
-			}
-		}
+				cities.get(words[2]).vDevices.get(words[3]).state.put(words[i], words[i+1]);
 		//simulate event
 		if ("create".equals(words[0]) && "sensor-event".equals(words[2])) {
 			
