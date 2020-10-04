@@ -55,7 +55,7 @@ class City{
 	Pair<String, String> location;
 	int radius;
 	Map<String, VirtualDevice> vDevices = new HashMap();
-	List people = new ArrayList();
+	Map<String, Person> people = new HashMap();
 	//List getInfo(){
 	//}
 	void setInfo(String i, String n, String a, Pair l, int r){
@@ -68,8 +68,9 @@ class City{
 }
 
 class Person{
-	HashMap<String, String> attributes;
+	Map<String, String> attributes = new HashMap();
 	Boolean isResident = true;
+	String id;
 }
 
 class Controller {
@@ -97,7 +98,8 @@ class Controller {
 			else if("resident".equals(words[1]) || "visitor".equals(words[1])){
 				Person r = new Person();
 				//set attributes
-				for(int i=2;i<words.length;i+=2)
+				r.id=words[2];
+				for(int i=3;i<words.length;i+=2)
 					r.attributes.put(words[i], words[i+1]);
 				//set isResident
 				if("visitor".equals(words[1]))
@@ -106,7 +108,7 @@ class Controller {
 			//devices
 			else{
 				VirtualDevice d = new VirtualDevice();
-				cities.get(words[2]).vDevices.put(words[2], d);//add to devices list of that city
+				cities.get(words[2]).vDevices.put(words[3], d);//add to devices list of that city
 				d.defVDevice(words[1], words[3], new Pair<String, String>(words[6], words[8]), words[9]);
 				d.state.put("text", words[11]);
 			}
@@ -122,9 +124,15 @@ class Controller {
 		}
 		//update
 		if ("update".equals(words[0]))
-			//store first token as key in device state, second as value, repeat
-			for(int i=1;i<words.length;i+=2)
-				cities.get(words[2]).vDevices.get(words[3]).state.put(words[i], words[i+1]);
+			//person
+			if("resident".equals(words[1]) || "visitor".equals(words[1]))
+				for(int i=5;i<words.length;i+=2)
+					cities.get(words[2]).people.get(words[3]).attributes.put(words[i], words[i+1]);
+			//device
+			else
+				//store first token as key in device state, second as value, repeat
+				for(int i=4;i<words.length;i+=2)
+					cities.get(words[2]).vDevices.get(words[3]).state.put(words[i], words[i+1]);
 		//simulate event
 		//if ("create".equals(words[0]) && "sensor-event".equals(words[2])) {
 		//}
