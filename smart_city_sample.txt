@@ -145,8 +145,8 @@ update visitor visitor_1  lat 42.3830 long -71.1125
 
 
 # Show the details of the person
-# show person <person_id>
+# show person <city_id> <person_id>
 
-show person resident_1
-show person visitor_1
+show person city_1 resident_1
+show person city_1 visitor_1
 
