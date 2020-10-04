@@ -8,10 +8,14 @@ import java.util.regex.*;
 import java.nio.file.*;
 import java.io.IOException;
 
+//EVENT
+//an event has a type action and subject
 class Event{
 	String type, action, subject;
 }
 
+//PHYSICAL DEVICE
+//A deivce can receiver commands and create events from sensors
 class Device{
 	String microphone, camera;
 	int thermometer, co2meter;
@@ -27,6 +31,8 @@ class Device{
 	}
 }
 
+//SIMULATOR
+//A simulator takes a command and creates an event as if it was the physical device
 class Simulator{
 	void simulateEvent(String command){
 		Event e = new Event();
@@ -34,6 +40,10 @@ class Simulator{
 	}
 }
 
+//VIRTUAL DEVICE
+//A virtual devices holds the state of the device.
+//Virtual devices receive events and passes them to the controller.
+//Virtual devices receive commands and pass them to the device.
 class VirtualDevice{
 	String id, type, event;
 	Pair<String, String> location;
@@ -50,16 +60,32 @@ class VirtualDevice{
 	}
 }
 
+//CITY
+//A city holds people and devices.
 class City{
 	String id, name, account;
 	Pair<String, String> location;
 	int radius;
 	Map<String, VirtualDevice> vDevices = new HashMap();
 	Map<String, Person> people = new HashMap();
-	//List getInfo(){
-	//}
 	void setInfo(String i, String n, String a, Pair l, int r){
 		id=i; name=n; account=a; location=l; radius=r;
+	}
+	//returns string of id, name, account, location, people, and IoT devices
+	String getInfo(){
+		//add all the people's ids to a list
+		List<String> names = new ArrayList<>(people.keySet());
+		//add all the devices ids to a list
+		List<String> devices = new ArrayList<>(vDevices.keySet());
+		//build a string with all the info
+		StringBuilder str = new StringBuilder();
+		str.append("City: "+id+"\n"+
+			  "Name: "+name+"\n"+
+			  "Account: "+account+"\n"+
+			  "Lat: "+location.getKey()+" Lon: "+location.getValue()+"\n"+
+			  "People: "+names+"\n"+
+			  "Devices: "+devices+"\n");
+		return str.toString();
 	}
 	void command(String command){
 	}
@@ -67,12 +93,22 @@ class City{
 	}
 }
 
+//PERSON
+//A person can be a resident or visitor.
+//A persons attributes are all stired in Hashmap attributes.
 class Person{
 	Map<String, String> attributes = new HashMap();
 	Boolean isResident = true;
 	String id;
+	Map<String, String> getInfo(){
+		return attributes;
+	}
 }
 
+//CONTROLLER
+//The controller receives and processes all commands.
+//The controller prints to the console
+//The controller keeps a list of all cities it manages.
 class Controller {
 	Map<String, City> cities = new HashMap();
 	void command(String command){
@@ -117,11 +153,9 @@ class Controller {
 		//show
 		if ("show".equals(words[0])) {
 			if("city".equals(words[1]))
-				//System.out.println(cities.get(words[2]).getInfo());
-				System.out.println("todo city info goes here");
+				System.out.println(cities.get(words[2]).getInfo());
 			if("person".equals(words[1]))
-				//System.out.println(cities.get(words[2]).people.get(words[3]));
-				System.out.println("todo person info goes here");
+				System.out.println(cities.get(words[2]).people.get(words[3]).getInfo() + "\n");
 		}
 		//update
 		if ("update".equals(words[0]))
@@ -142,6 +176,9 @@ class Controller {
 	}
 }
 
+//MODEL SERVICE
+//The service contains the main class
+//The main class assists with parsing commands and feeds commands to the controller
 public class ModelService {
     public static void main(String[] args) throws IOException {
     	String commands = new String(Files.readAllBytes(Paths.get("C:\\Users\\Andrew\\Documents\\JCreator Pro\\MyProjects\\model service\\ModelService\\src\\smart_city_sample.txt")));
