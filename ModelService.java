@@ -75,6 +75,9 @@ class Person{
 class Controller {
 	Map<String, City> cities = new HashMap();
 	void command(String command){
+		//if empty command, ignore
+		if("".equals(command))
+			return;
 		//tokenize command by spaces unless in quotes
 		List<String> l = new ArrayList<String>();
 		Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(command);
@@ -132,7 +135,7 @@ class Controller {
 
 public class ModelService {
     public static void main(String[] args) throws IOException {
-    	String commands = new String(Files.readAllBytes(Paths.get("smart_city_sample.txt")));
+    	String commands = new String(Files.readAllBytes(Paths.get("C:\\Users\\Andrew\\Documents\\JCreator Pro\\MyProjects\\model service\\ModelService\\src\\smart_city_sample.txt")));
         //remove comment lines
         String lines[] = commands.split("\n");
         for(int i=0;i<lines.length;i++)
@@ -147,7 +150,9 @@ public class ModelService {
         commands = finalStringBuilder.toString();
         //process each line
         Controller c = new Controller();
-        for (String line : lines)
-                c.command(line);
+        for (String line : lines){
+        	System.out.println(line);
+        	c.command(line);
+        }
     }
 }
