@@ -37,7 +37,7 @@ class Simulator{
 class VirtualDevice{
 	String id, type, event;
 	Pair<String, String> location;
-	Map<String, String> state;//state also records required attributes status and enabled
+	Map<String, String> state = new HashMap();//state also records required attributes status and enabled
 	Device d = new Device();
 	Simulator s = new Simulator();
 	void command(String command){
