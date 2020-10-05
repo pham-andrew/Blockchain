@@ -1,0 +1,17 @@
+--------------------Configuration: ModelService - JDK version 1.8.0_101 <Default> - <Default>--------------------
+define city city_1 name Cambridge-MA account cambridge-account lat 42.3766 long -71.1160 radius 100
+
+define vehicle city_1 bus_1 lat 42.3736 long -71.1214 enabled true type bus activity "on route" capacity 30 fee 1
+
+create sensor-event city_1 bus_1 type microphone value "does this bus go to Central Square?" subject jane
+
+show device city_1 bus_1
+
+ID: bus_1
+Type: vehicle
+Lat: 42.3736 Lon: -71.1214
+State: {activity="on route", fee=1, type=bus, enabled=true, capacity=30}
+Event:   Type: microphone Action: "does this bus go to Central Square?" Subject: jane
+
+
+Process completed.
