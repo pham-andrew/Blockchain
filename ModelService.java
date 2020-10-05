@@ -12,6 +12,9 @@ import java.io.IOException;
 //an event has a type action and subject
 class Event{
 	String type, action, subject;
+	void setEvent(String t, String a, String s){
+		type=t; action=a; subject=s;
+	}
 }
 
 //PHYSICAL DEVICE
@@ -19,6 +22,7 @@ class Event{
 class Device{
 	String microphone, camera;
 	int thermometer, co2meter;
+	Event e;
 	ArrayList<String> getSensorData(){
 		ArrayList<String> data = new ArrayList();
 		data.add(microphone);
@@ -27,16 +31,16 @@ class Device{
 		data.add(Integer.toString(co2meter));
 		return data;
 	}
-	void command(String command){
-	}
+	void command(String command){}
 }
 
 //SIMULATOR
 //A simulator takes a command and creates an event as if it was the physical device
 class Simulator{
-	void simulateEvent(String command){
+	Event simulateEvent(String t, String a, String s){
 		Event e = new Event();
-		//TODO
+		e.setEvent(t, a, s);
+		return e;
 	}
 }
 
@@ -45,18 +49,31 @@ class Simulator{
 //Virtual devices receive events and passes them to the controller.
 //Virtual devices receive commands and pass them to the device.
 class VirtualDevice{
-	String id, type, event;
+	String id, type;
 	Pair<String, String> location;
 	Map<String, String> state = new HashMap();//state also records required attributes status and enabled
+	Event e = new Event();//to be set by physical device or simulator
 	Device d = new Device();
 	Simulator s = new Simulator();
+	void defVDevice(String t, String i, Pair l, String en){
+		type=t; id=i; location=l;
+		state.put("enabled", en);
+	}
+	String getInfo(){
+		StringBuilder str = new StringBuilder();
+		str.append(
+			  "ID: "+id+"\n"+
+			  "Type: "+type+"\n"+
+			  "Lat: "+location.getKey()+" Lon: "+location.getValue()+"\n"+
+			  "State: "+state+"\n"+
+			  "Event: "+"  Type: " + e.type + " Action: " + e.action + " Subject: " + e.subject+"\n");
+		return str.toString();
+	}
+	void simulateEvent(String t, String v, String subject){
+		e=s.simulateEvent(t, v, subject);
+	}
 	void command(String command){
-	}
-	void event(Event e){
-	}
-	void defVDevice(String t, String i, Pair l, String e){
-		type=t; id=t; location=l;
-		state.put("enabled", e);
+		d.command(command);
 	}
 }
 
@@ -87,10 +104,6 @@ class City{
 			  "Devices: "+devices+"\n");
 		return str.toString();
 	}
-	void command(String command){
-	}
-	void event(Event e){
-	}
 }
 
 //PERSON
@@ -111,7 +124,7 @@ class Person{
 //The controller keeps a list of all cities it manages.
 class Controller {
 	Map<String, City> cities = new HashMap();
-	void command(String command){
+	void command(String command) throws CommandException{
 		//if empty command, ignore
 		if("".equals(command))
 			return;
@@ -146,16 +159,39 @@ class Controller {
 			else{
 				VirtualDevice d = new VirtualDevice();
 				cities.get(words[2]).vDevices.put(words[3], d);//add to devices list of that city
-				d.defVDevice(words[1], words[3], new Pair<String, String>(words[6], words[8]), words[9]);
-				d.state.put("text", words[11]);
+				d.defVDevice(words[1], words[3], new Pair<String, String>(words[5], words[7]), words[9]);
+				for(int i=8;i<words.length;i+=2)
+					d.state.put(words[i], words[i+1]);
 			}
 		}
 		//show
 		if ("show".equals(words[0])) {
+			//if city id can't be found, throw exception
+			if(cities.get(words[2])==null)
+				throw new CommandException("Cannot find city");
+			//print
 			if("city".equals(words[1]))
 				System.out.println(cities.get(words[2]).getInfo());
-			if("person".equals(words[1]))
+			if("person".equals(words[1])){
+				//exception if cant find person
+				if(cities.get(words[2]).people.get(words[3])==null)
+					throw new CommandException("Cannot find person");
 				System.out.println(cities.get(words[2]).people.get(words[3]).getInfo() + "\n");
+			}
+			if("device".equals(words[1])){
+				//exception if cant find device
+				if(words.length>3)
+					if(cities.get(words[2]).vDevices.get(words[3])==null)
+						throw new CommandException("Cannot find device");
+				//show devices
+				if(words.length>3){//if device is specified
+					System.out.println("\n" + cities.get(words[2]).vDevices.get(words[3]).getInfo());
+				}else{//show all devices in city
+					Map<String, VirtualDevice> map = cities.get(words[2]).vDevices;
+					for(Map.Entry<String, VirtualDevice> entry : map.entrySet())
+						System.out.println("\n" + entry.getValue().getInfo());
+				}
+			}
 		}
 		//update
 		if ("update".equals(words[0]))
@@ -169,19 +205,30 @@ class Controller {
 				for(int i=4;i<words.length;i+=2)
 					cities.get(words[2]).vDevices.get(words[3]).state.put(words[i], words[i+1]);
 		//simulate event
-		//if ("create".equals(words[0]) && "sensor-event".equals(words[2])) {
-		//}
-		//void event(Event e) {
-		//}
+		if ("create".equals(words[0]) && "sensor-event".equals(words[1])) {
+			cities.get(words[2]).vDevices.get(words[3]).simulateEvent(words[5], words[7], "");
+			if(words.length>10)//if there is a subject
+				cities.get(words[2]).vDevices.get(words[3]).simulateEvent(words[5], words[7], words[9]);
+		}
+		//command
+		if("command".equals(words[0]))
+			cities.get(words[1]).vDevices.get(words[2]).command(words[3]);
 	}
+}
+
+class CommandException extends Exception{
+    String reason;
+    public CommandException(String r){
+        reason = r;
+    }
 }
 
 //MODEL SERVICE
 //The service contains the main class
 //The main class assists with parsing commands and feeds commands to the controller
 public class ModelService {
-    public static void main(String[] args) throws IOException {
-    	String commands = new String(Files.readAllBytes(Paths.get("C:\\Users\\Andrew\\Documents\\JCreator Pro\\MyProjects\\model service\\ModelService\\src\\smart_city_sample.txt")));
+    public static void main(String[] args) throws IOException, CommandException {
+    	String commands = new String(Files.readAllBytes(Paths.get("C:\\Users\\Andrew\\Documents\\JCreator Pro\\MyProjects\\model service\\ModelService\\src\\smart_city_test.txt")));
         //remove comment lines
         String lines[] = commands.split("\n");
         for(int i=0;i<lines.length;i++)
