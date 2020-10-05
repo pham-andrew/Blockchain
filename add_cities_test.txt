@@ -1,0 +1,11 @@
+define city city_1 name Cambridge-MA account cambridge-account lat 42.3766 long -71.1160 radius 100
+
+define street-sign city_1 ss_1 lat 42.3732 long -71.1202 enabled true text "Welcome to Harvard Square"
+
+define resident city_1 resident_1 name jane bio-metric "voice-print='voiceprint-jane',face-print='faceprint-jane'" phone 781-222-3344 role adult lat 42.3735 long -71.1205 account janes_account
+
+show city city_1
+
+define city city_2 name Cambridge-MA account cambridge-account lat 42.3766 long -71.1160 radius 100
+
+show city city_2
