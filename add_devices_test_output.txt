@@ -1,0 +1,42 @@
+--------------------Configuration: ModelService - JDK version 1.8.0_101 <Default> - <Default>--------------------
+define city city_1 name Cambridge-MA account cambridge-account lat 42.3766 long -71.1160 radius 100
+
+define street-sign city_1 ss_1 lat 42.3732 long -71.1202 enabled true text "Welcome to Harvard Square"
+
+define street-sign city_1 ss_2 lat 42.3736 long -71.1214 enabled true text "Brattle Theatre"
+
+show city city_1
+
+City: city_1
+Name: Cambridge-MA
+Account: cambridge-account
+Lat: 42.3766 Lon: -71.1160
+People: []
+Devices: [ss_1, ss_2]
+
+show device city_1 ss_1
+
+
+ID: ss_1
+Type: street-sign
+Lat: 42.3732 Lon: -71.1202
+State: {text="Welcome to Harvard Square", enabled=true}
+Event:   Type: null Action: null Subject: null
+
+show device city_1
+
+ID: ss_1
+Type: street-sign
+Lat: 42.3732 Lon: -71.1202
+State: {text="Welcome to Harvard Square", enabled=true}
+Event:   Type: null Action: null Subject: null
+
+
+ID: ss_2
+Type: street-sign
+Lat: 42.3736 Lon: -71.1214
+State: {text="Brattle Theatre", enabled=true}
+Event:   Type: null Action: null Subject: null
+
+
+Process completed.
