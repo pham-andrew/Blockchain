@@ -4,4 +4,4 @@ define vehicle city_1 bus_1 lat 42.3736 long -71.1214 enabled true type bus acti
 
 create sensor-event city_1 bus_1 type microphone value "does this bus go to Central Square?" subject jane
 
-get sensor-event city_1 bus_1
+show device city_1 bus_1

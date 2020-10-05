@@ -149,3 +149,5 @@ update visitor city_1 visitor_1 lat 42.3830 long -71.1125
 
 show person city_1 resident_1
 show person city_1 visitor_1
+
+show device city_1

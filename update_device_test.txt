@@ -1,0 +1,15 @@
+define city city_1 name Cambridge-MA account cambridge-account lat 42.3766 long -71.1160 radius 100
+
+define street-sign city_1 ss_1 lat 42.3732 long -71.1202 enabled true text "Welcome to Harvard Square"
+
+define street-sign city_1 ss_2 lat 42.3736 long -71.1214 enabled true text "Brattle Theatre"
+
+show device city_1 ss_1
+
+update street-sign city_1 ss_1 text "The time is now 9 00 pm"
+
+update street-sign city_1 ss_2 text "Now playing, Cassablaca"
+
+show device city_1 ss_1
+
+show device city_1
