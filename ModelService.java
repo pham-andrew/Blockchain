@@ -216,6 +216,8 @@ class Controller {
 	}
 }
 
+//COMMAND EXCEPTION
+//Checks if we are referencing an object correctly in our commands
 class CommandException extends Exception{
     String reason;
     public CommandException(String r){
