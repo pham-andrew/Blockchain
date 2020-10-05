@@ -207,7 +207,7 @@ class Controller {
 		//simulate event
 		if ("create".equals(words[0]) && "sensor-event".equals(words[1])) {
 			cities.get(words[2]).vDevices.get(words[3]).simulateEvent(words[5], words[7], "");
-			if(words.length>10)//if there is a subject
+			if(words.length==10)//if there is a subject
 				cities.get(words[2]).vDevices.get(words[3]).simulateEvent(words[5], words[7], words[9]);
 		}
 		//command
@@ -228,7 +228,7 @@ class CommandException extends Exception{
 //The main class assists with parsing commands and feeds commands to the controller
 public class ModelService {
     public static void main(String[] args) throws IOException, CommandException {
-    	String commands = new String(Files.readAllBytes(Paths.get("C:\\Users\\Andrew\\Documents\\JCreator Pro\\MyProjects\\model service\\ModelService\\src\\smart_city_test.txt")));
+    	String commands = new String(Files.readAllBytes(Paths.get("com/cscie97/model/smart_city_sample.txt")));
         //remove comment lines
         String lines[] = commands.split("\n");
         for(int i=0;i<lines.length;i++)
