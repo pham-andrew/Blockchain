@@ -15,22 +15,36 @@ class Event{
 	void setEvent(String t, String v, String s){
 		type=t; value=v; subject=s;
 	}
+	String getType(){return type;}
+	String getValue(){return value;}
+	String getSubject(){return subject;}
+}
+
+//OBSERVER PATTERN DESIGN
+interface Observer{
+	public void update();
+}
+interface Subject{
+	public void notify(Event e);
 }
 
 //DEVICE
 //A deivce can receiver commands and create events from sensors
-class Device{
+class Device implements Subject{
+	String id;
 	Map<String, String> sensors = new HashMap();//values for microphone, camera, thermemeter, and co2 meter held in sensors
-	String command;
+	Pair<String, String> location;
+	City city;
 	Map<String, String> getSensorData(){
 		return sensors;
 	}
-	void command(String com){
-		command=com;
+	void command(String commmand){
+		System.out.println(id +": "+ command);
 	}
 	Controller c;
+	Device self;
 	void notify(Event e){
-		c.update(e);
+		c.update(e, self);
 	}
 	Event sensorEvent(Event e){
 		sensors.put(e.type, e.value);
@@ -49,11 +63,11 @@ class VirtualDevice{
 	Map<String, String> state = new HashMap();//state also records required attributes status and enabled
 	Event e = new Event();//to be set by physical device or simulator
 	Device d = new Device();
-	Controller c;
 	Simulator s = new Simulator();
-	void defVDevice(String t, String i, Pair l, String en, Controller con){
-		type=t; id=i; location=l; c=con; d.c=c;
+	void defVDevice(String t, String i, Pair l, String en, Controller c, City city){
+		type=t; id=i; location=l;
 		state.put("enabled", en);
+		d.c=c; d.location=l; d.self=d; d.city=city; d.id=id;
 	}
 	String getInfo(){
 		StringBuilder str = new StringBuilder();
@@ -118,9 +132,9 @@ class Person{
 //The controller receives and processes all commands.
 //The controller prints to the console
 //The controller keeps a list of all cities it manages.
-class Controller {
-	Map<String, City> cities = new HashMap();
+class Controller implements Observer{
 	Controller c;
+	Map<String, City> cities = new HashMap();
 	void command(String command) throws CommandException{
 		//if empty command, ignore
 		if("".equals(command))
@@ -156,7 +170,7 @@ class Controller {
 			else{
 				VirtualDevice d = new VirtualDevice();
 				cities.get(words[2]).vDevices.put(words[3], d);//add to devices list of that city
-				d.defVDevice(words[1], words[3], new Pair<String, String>(words[5], words[7]), words[9], c);
+				d.defVDevice(words[1], words[3], new Pair<String, String>(words[5], words[7]), words[9], c, words[2]);
 				for(int i=8;i<words.length;i+=2)
 					d.state.put(words[i], words[i+1]);
 			}
@@ -193,7 +207,7 @@ class Controller {
 		//update
 		if ("update".equals(words[0]))
 			//person
-			if("resident".equals(words[1]) || "visitor".equals(words[1]))
+			if("resident".equals(words[1]) || "visitor".equals(words[1]) || "person".equals(words[1]))
 				for(int i=4;i<words.length;i+=2)
 					cities.get(words[2]).people.get(words[3]).attributes.put(words[i], words[i+1]);		
 			//device
@@ -214,8 +228,83 @@ class Controller {
 		//command
 		if("command".equals(words[0]))
 			cities.get(words[1]).vDevices.get(words[2]).command(words[3]);
+		//announce
+		//scramble
+		//nearest_announce
+		//disable cars
+		//enable cars
 	}
-	void update(Event e){}
+	
+	//update checks if any rules are triggered and executes commands if necessary
+	int CO2Count;
+	boolean carsOn;
+	Controller(){CO2Count=0; carsOn=true;}//needed to count how many devices report
+	void update(Event e, Device origin){
+		if(e.getType()=="camera"){//camera
+			//emergency
+			if(e.getValue().equals("fire")||e.getValue().equals("flood")e.getValue().equals("earthquake")e.getValue().equals("weather")){
+				command("announce");//announce
+				command("scramble");//send half robots to help and send half robots to evacuate others
+			}
+			if(e.getValue().equals("traffic_accident")){//traffic accident
+				origin.command("accouncing stay calm help is on the way");//reporting device announces stay calm help is on way
+				command("nearest_announce traffic_accident " + origin.location.first + " " origin.location.second );//nearest 2 robots announce emergency and location
+			}
+			//litter
+			if(e.getValue().equals("litter")){
+				origin.command("says please do not litter");//please do not litter
+				//robot cleans garbage
+				//charge person 50 units for littering
+			}
+			if(e.getValue().equals("person_seen")){//person seen
+				command("update " + e.subject + " lat " + origin.location.first + " long " + origin.location.second);//update person location
+			}
+			//person boards bus
+			if(e.getValue().equals("person_board_bus")){
+				origin.command("says hello good to see you");//hello good to see you
+				//charge person for bus
+			}
+			//car parks
+			if(e.getValue().equals("car_parks")){
+				//charge vehicle for parking 1 hr
+			}
+		}
+		if(e.getType()=="CO2"){//CO2
+			if(e.getValue>1000){//co2 level over 1000
+				//if reported by more than 3 devices, disable all cars
+				CO2Count++;
+				if(CO2Count>3 || carsOn==true){
+					command("disable_cars");
+					C02Count=0;
+					carsOn=false;
+				}
+				if(CO2Count>3 || carsOn==false){//co2 level under 1000
+					//if reported by more than 3 devices, enable all cars
+					command("enable_cars");
+					C02Count=0;
+					carsOn=true;
+				}
+			}
+		}
+		if(e.getType()=="microphone"){//microphone
+			if(e.getValue.equals("broken_glass"){//sound of broken glass
+				//robot cleans up broken glass at location
+			}
+			if(e.getValue.startsWith("can you help me find my child"){//asking to help find child
+				//parse last word as child id
+				//locate child
+				//robot retreives child
+			}
+			if(e.getValue.startsWith("Does this bus go to central square?")//bus route help
+				origin.command("says yes");
+			if(e.getValue.startsWith("what movies are showing tonight?")//what movies are showing
+				origin.command("says casablanca displays poster")//casablanca
+			if(e.getValue.startsWith("reserve 2 seats for the 9 pm showing of Casablanca"){//reserve two seats
+				//charge person for two seats 10 units
+				origin.command("says seats reserverd");//say seats reserved
+			}
+		}
+	}
 }
 
 //COMMAND EXCEPTION
