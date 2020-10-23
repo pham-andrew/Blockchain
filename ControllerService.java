@@ -22,10 +22,10 @@ class Event{
 
 //OBSERVER PATTERN DESIGN
 interface Observer{
-	public void update();
+	public void update(Event e, Device origin) throws CommandException;
 }
 interface Subject{
-	public void notify(Event e);
+	public void notify(Event e) throws CommandException;
 }
 
 //DEVICE
@@ -38,15 +38,15 @@ class Device implements Subject{
 	Map<String, String> getSensorData(){
 		return sensors;
 	}
-	void command(String commmand){
+	void command(String command){
 		System.out.println(id +": "+ command);
 	}
 	Controller c;
 	Device self;
-	void notify(Event e){
+	public void notify(Event e) throws CommandException{
 		c.update(e, self);
 	}
-	Event sensorEvent(Event e){
+	Event sensorEvent(Event e) throws CommandException{
 		sensors.put(e.type, e.value);
 		notify(e);
 		return e;
@@ -79,7 +79,7 @@ class VirtualDevice{
 			  "Event: "+"  Type: " + e.type + " Value: " + e.value + " Subject: " + e.subject+"\n");
 		return str.toString();
 	}
-	void sensorEvent(Event event){
+	void sensorEvent(Event event) throws CommandException{
 		e=d.sensorEvent(event);
 	}
 	void command(String command){
@@ -171,7 +171,7 @@ class Controller implements Observer{
 			else{
 				VirtualDevice d = new VirtualDevice();
 				cities.get(words[2]).vDevices.put(words[3], d);//add to devices list of that city
-				d.defVDevice(words[1], words[3], new Pair<String, String>(words[5], words[7]), words[9], c, words[2]);
+				d.defVDevice(words[1], words[3], new Pair<String, String>(words[5], words[7]), words[9], c, cities.get(words[2]));
 				for(int i=8;i<words.length;i+=2)
 					d.state.put(words[i], words[i+1]);
 			}
@@ -231,25 +231,26 @@ class Controller implements Observer{
 		if("command".equals(words[0]))
 			cities.get(words[1]).vDevices.get(words[2]).command(words[3]);
 		//announce
-		if("announce".equals(words[0])){
-			for(Map.Entry<String, HashMap> entry : cities.get(words[1]).vDevices.entrySet()) {
-			    HashMap value = entry.getValue();
-			    value.command("announcing " + words[1] + "in " + words[2]);
-			}
-		}
+		if("announce".equals(words[0]))
+			for(Map.Entry<String, VirtualDevice> entry : cities.get(words[1]).vDevices.entrySet())
+			    entry.getValue().command("announcing " + words[1] + "in " + words[2]);
 		//scramble: half robots go to help half go to evacuate
 		if("scramble".equals(words[0])){
-			while(cities.get(words[1]).vDevices.hasNext().hasNext()) { 
-            	Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
-            	mapElement.getValue().command("addressing emergency at " + words[1] + " " + words[2]);
-            	mapElement = (Map.Entry)hmIterator.next();
-            	mapElement.getValue().command("helping people find shelter");
-        	} 
+			boolean helping=true;//we need to send half to help so every other will be helping
+			for(Map.Entry<String, VirtualDevice> entry : cities.get(words[1]).vDevices.entrySet()){
+				if(helping){
+					entry.getValue().command("addressing " + words[2] + " at " + words[3] + " " + words[4]);
+					helping=false;
+				}else{
+					entry.getValue().command("helping people find shelter");
+					helping=true;
+				}
+			}
 		}
 		//address
 		int robotcount=0;
 		if("address".equals(words[0])){
-			for(Map.Entry<String, HashMap> entry : cities.get(words[2]).vDevices.entrySet()) {
+			for(Map.Entry<String, VirtualDevice> entry : cities.get(words[2]).vDevices.entrySet()) {
 			    if(entry.getValue().type.equals("robot")){
 			    	entry.getValue().command("addressing " + words[1] + " at " + words[3] + " " + words[4]);
 			    	robotcount++;
@@ -262,7 +263,7 @@ class Controller implements Observer{
 		}
 		//disable cars
 		if("disable_cars".equals(words[0])){
-			for(Map.Entry<String, HashMap> entry : cities.get(words[1]).vDevices.entrySet()) {
+			for(Map.Entry<String, VirtualDevice> entry : cities.get(words[1]).vDevices.entrySet()) {
 			    if(entry.getValue().type.equals("car")){
 			    	entry.getValue().state.put("enabled", "false");
 			    	System.out.println(entry.getValue().id + " disabled");
@@ -271,19 +272,18 @@ class Controller implements Observer{
 		}
 		//enable cars
 		if("enable_cars".equals(words[0])){
-			for(Map.Entry<String, HashMap> entry : cities.get(words[1]).vDevices.entrySet()) {
-			    for(Map.Entry<String, HashMap> entry : cities.get(words[1]).vDevices.entrySet())
-				    if(entry.getValue().type.equals("car")){
-				    	entry.getValue().state.put("enabled", "true");
-				    	System.out.println(entry.getValue().id + " enabled");
-				    }
+			for(Map.Entry<String, VirtualDevice> entry : cities.get(words[1]).vDevices.entrySet()) {
+				if(entry.getValue().type.equals("car")){
+			    	entry.getValue().state.put("enabled", "true");
+				    System.out.println(entry.getValue().id + " enabled");
+				}
 			}
 		}
 		//retrieve child
-		if(e.getValue().equals("retrieve_child")){
-			String lat = cities.get(words[2]).people.get(words[1]).location.first;//locate child
-			string lon = cities.get(words[2]).people.get(words[1]).location.second;
-			for(Map.Entry<String, HashMap> entry : cities.get(words[1]).vDevices.entrySet())
+		if("retrieve_child".equals(words[0])){
+			String lat = cities.get(words[2]).people.get(words[1]).getInfo().get("lat");//locate child
+			String lon = cities.get(words[2]).people.get(words[1]).getInfo().get("long");
+			for(Map.Entry<String, VirtualDevice> entry : cities.get(words[1]).vDevices.entrySet())
 				if(entry.getValue().type.equals("robot")){
 				    	entry.getValue().command("retrieving " + words[1] + " at " + lat + " " + lon);
 				}
@@ -294,9 +294,9 @@ class Controller implements Observer{
 	int CO2Count;
 	boolean carsOn;
 	Controller(){CO2Count=0; carsOn=true;}//needed to count how many devices report
-	void update(Event e, Device origin){
+	public void update(Event e, Device origin) throws CommandException{
 		//camera
-		if(e.getType()=="camera"){
+		if(e.getType().equals("camera")){
 			//emergency
 			if(e.getValue().equals("fire")||e.getValue().equals("flood")||e.getValue().equals("earthquake")||e.getValue().equals("weather")){
 				command("announce " + e.getValue() + " " + origin.city);//announce
@@ -304,16 +304,16 @@ class Controller implements Observer{
 			}
 			if(e.getValue().equals("traffic_accident")){//traffic accident
 				origin.command("announcing stay calm help is on the way");//reporting device announces stay calm help is on way
-				command("address traffic_accident " + origin.location.first + " " + origin.location.second);//address emergency at location
+				command("address traffic_accident " + origin.location.getKey() + " " + origin.location.getValue());//address emergency at location
 			}
 			//litter
 			if(e.getValue().equals("litter")){
 				origin.command("says please do not litter");//please do not litter
-				command("address litter " + origin.city + " " + origin.location.first + " " + origin.location.second);//robot cleans garbage
+				command("address litter " + origin.city + " " + origin.location.getKey() + " " + origin.location.getValue());//robot cleans garbage
 				//charge person 50 units for littering
 			}
 			if(e.getValue().equals("person_seen")){//person seen
-				command("update " + e.subject + " lat " + origin.location.first + " long " + origin.location.second);//update person location
+				command("update " + e.subject + " lat " + origin.location.getKey() + " long " + origin.location.getValue());//update person location
 			}
 			//person boards bus
 			if(e.getValue().equals("person_board_bus")){
@@ -326,37 +326,37 @@ class Controller implements Observer{
 			}
 		}
 		//CO2
-		if(e.getType()=="CO2"){
-			if(e.getValue>1000){//co2 level over 1000
+		if(e.getType().equals("CO2")){
+			if(Integer.parseInt(e.getValue())>1000){//co2 level over 1000
 				//if reported by more than 3 devices, disable all cars
 				CO2Count++;
 				if(CO2Count>3 || carsOn==true){
 					command("disable_cars " + origin.city);
-					C02Count=0;
+					CO2Count=0;
 					carsOn=false;
 				}
 				if(CO2Count>3 || carsOn==false){//co2 level under 1000
 					//if reported by more than 3 devices, enable all cars
 					command("enable_cars " + origin.city);
-					C02Count=0;
+					CO2Count=0;
 					carsOn=true;
 				}
 			}
 		}
 		//microphone
-		if(e.getType()=="microphone"){
-			if(e.getValue.equals("broken_glass"))//sound of broken glass
+		if(e.getType().equals("microphone")){
+			if(e.getValue().equals("broken_glass"))//sound of broken glass
 				command("address broken_glass " + origin.city + " " + origin.location.getKey() + " " + origin.location.getValue());//robot cleans up broken glass at location
-			if(e.getValue.startsWith("can you help me find my child")){//asking to help find child
-				String child = e.getValue.substring(test.lastIndexOf(" ")+1);//parse last word as child id
+			if(e.getValue().startsWith("can you help me find my child")){//asking to help find child
+				String child = e.getValue().substring(e.getValue().lastIndexOf(" ")+1);//parse last word as child id
 				command("retrieve_child " + child + " "+ origin.city);//locate and retrieve child
 				origin.command("says stay here we will retrieve the child");
 			}
-			if(e.getValue.startsWith("Does this bus go to central square?"))//bus route help
+			if(e.getValue().startsWith("Does this bus go to central square?"))//bus route help
 				origin.command("says yes");
-			if(e.getValue.startsWith("what movies are showing tonight?"))//what movies are showing
+			if(e.getValue().startsWith("what movies are showing tonight?"))//what movies are showing
 				origin.command("says casablanca displays poster");//casablanca
-			if(e.getValue.startsWith("reserve 2 seats for the 9 pm showing of Casablanca")){//reserve two seats
+			if(e.getValue().startsWith("reserve 2 seats for the 9 pm showing of Casablanca")){//reserve two seats
 				//charge person for two seats 10 units
 				origin.command("says seats reserverd");//say seats reserved
 			}
