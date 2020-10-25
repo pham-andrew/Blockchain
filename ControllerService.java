@@ -7,6 +7,8 @@ import javafx.util.Pair;
 import java.util.regex.*;
 import java.nio.file.*;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.*;
 
 //EVENT
 //an event has a type value and subject
@@ -128,18 +130,38 @@ class Person{
 	}
 }
 
+//LEDGER
+//simple ledger to keep track of bank account balances
+class Ledger{
+	Map<String, Integer> accounts = new HashMap();//key is account id, value is balance
+	public void createAccount(Integer amount, String accountid){
+		accounts.put(accountid, amount);
+	}
+	public void deposit(Integer amount, String account){
+		accounts.put(account, accounts.get(account)+amount);
+	}
+	public boolean withdraw(Integer amount, String account){
+		if(accounts.get(account)-amount > 0){
+			accounts.put(account, accounts.get(account)+amount);
+			return true;
+		}
+		return false;
+	}
+}
+
 //CONTROLLER
 //The controller receives and processes all commands.
 //The controller prints to the console
 //The controller keeps a list of all cities it manages.
 class Controller implements Observer{
+    Ledger ledger = new Ledger();
 	Controller c;
 	Map<String, City> cities = new HashMap();
-	//command controls, defines, and updates people, cities, and devices
-	void command(String command) throws CommandException{
+	//command controls, defines, and updates people, cities, and devices. returns true if command executed
+	boolean command(String command) throws CommandException{
 		//if empty command, ignore
 		if("".equals(command))
-			return;
+			return false;
 		//tokenize command by spaces unless in quotes
 		List<String> l = new ArrayList<String>();
 		Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(command);
@@ -228,6 +250,8 @@ class Controller implements Observer{
 				cities.get(words[2]).vDevices.get(words[3]).sensorEvent(e);
 			}
 		}
+		
+		//triggered commands
 		//command
 		if("command".equals(words[0]))
 			cities.get(words[1]).vDevices.get(words[2]).command(words[3]);
@@ -291,6 +315,18 @@ class Controller implements Observer{
 				}
 			System.out.println();
 		}
+		
+		//ledger commands
+		//withdraw
+		if("withdraw".equals(words[0]))
+			if(ledger.withdraw(Integer.parseInt(words[1]), cities.get(words[3]).people.get(words[2]).getInfo().get("account")))
+				return false;
+		//deposit
+		if("deposit".equals(words[0]))
+			ledger.deposit(Integer.parseInt(words[1]), cities.get(words[3]).people.get(words[2]).getInfo().get("account"));
+		if("create-account".equals(words[0]))
+			ledger.createAccount(Integer.parseInt(words[2]), words[1]);
+		return true;
 	}
 	
 	//update checks if any rules are triggered and executes commands if necessary
@@ -313,7 +349,7 @@ class Controller implements Observer{
 			if(e.getValue().equals("littering")){
 				origin.action("says please do not litter");//please do not litter
 				command("address litter " + origin.city.id + " " + origin.location.getKey() + " " + origin.location.getValue());//robot cleans garbage
-				//charge person 50 units for littering
+				command("withdraw 10 " + e.getSubject() + " " + origin.city.id); //charge person for two seats 10 units
 			}
 			if(e.getValue().equals("person_seen")){//person seen
 				command("update person " + origin.city.id + " " + e.subject + " lat " + origin.location.getKey() + " long " + origin.location.getValue());//update person location
@@ -321,12 +357,11 @@ class Controller implements Observer{
 			//person boards bus
 			if(e.getValue().equals("boards_bus")){
 				origin.action("says hello good to see you\n");//hello good to see you
-				//charge person for bus
+				command("withdraw 10 " + e.getSubject() + " " + origin.city.id);//charge person for bus
 			}
 			//car parks
-			if(e.getValue().equals("parked")){
-				//charge vehicle for parking 1 hr
-			}
+			if(e.getValue().equals("parked"))
+				command("withdraw 10 " + e.getSubject() + " " + origin.city.id);//charge vehicle for parking 1 hr
 		}
 		//CO2
 		if(e.getType().equals("co2meter")){
@@ -361,8 +396,10 @@ class Controller implements Observer{
 			if(e.getValue().startsWith("what_movies_are_showing_tonight?"))//what movies are showing
 				origin.action("says casablanca displays poster\n");//casablanca
 			if(e.getValue().startsWith("reserve_2_seats_for_the_9 pm_showing_of_Casablanca")){//reserve two seats
-				//charge person for two seats 10 units
-				origin.action("says seats reserverd\n");//say seats reserved
+				if(command("withdraw 10 " + e.getSubject() + " " + origin.city.id)) //charge person for two seats 10 units
+					origin.action("says seats reserverd\n");//say seats reserved
+				else
+					origin.action("insufficient funds");
 			}
 		}
 	}
