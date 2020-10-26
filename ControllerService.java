@@ -401,8 +401,8 @@ class Controller implements Observer{
 				origin.action("says yes\n");
 			if(e.getValue().startsWith("what_movies_are_showing_tonight?"))//what movies are showing
 				origin.action("says casablanca displays poster\n");//casablanca
-			if(e.getValue().startsWith("reserve_2_seats_for_the_9 pm_showing_of_Casablanca")){//reserve two seats
-				if(command("parking 10 " + e.getSubject() + " " + origin.city.id)) //charge person for two seats 10 units
+			if(e.getValue().equals("reserve_2_seats_for_the_9_pm_showing_of_Casablanca")){//reserve two seats
+				if(command("withdraw 10 " + e.getSubject() + " " + origin.city.id)) //charge person for two seats 10 units
 					origin.action("says seats reserverd\n");//say seats reserved
 				else
 					origin.action("insufficient funds");
