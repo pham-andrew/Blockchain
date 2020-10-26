@@ -139,10 +139,12 @@ class Ledger{
 	}
 	public void deposit(Integer amount, String account){
 		accounts.put(account, accounts.get(account)+amount);
+		System.out.println("Deposited " + amount + " to " + account + "\n");
 	}
 	public boolean withdraw(Integer amount, String account){
 		if(accounts.get(account)-amount > 0){
 			accounts.put(account, accounts.get(account)+amount);
+			System.out.println("Withdrew " + amount + " from " + account + "\n");
 			return true;
 		}
 		return false;
@@ -319,13 +321,17 @@ class Controller implements Observer{
 		//ledger commands
 		//withdraw
 		if("withdraw".equals(words[0]))
-			if(ledger.withdraw(Integer.parseInt(words[1]), cities.get(words[3]).people.get(words[2]).getInfo().get("account")))
+			if(!ledger.withdraw(Integer.parseInt(words[1]), cities.get(words[3]).people.get(words[2]).getInfo().get("account")))
 				return false;
 		//deposit
 		if("deposit".equals(words[0]))
 			ledger.deposit(Integer.parseInt(words[1]), cities.get(words[3]).people.get(words[2]).getInfo().get("account"));
 		if("create-account".equals(words[0]))
 			ledger.createAccount(Integer.parseInt(words[2]), words[1]);
+		//parking
+		if("parking".equals(words[0]))
+			if(!ledger.withdraw(Integer.parseInt(words[1]), cities.get(words[3]).people.get(cities.get(words[3]).vDevices.get(words[2]).state.get("driver")).getInfo().get("account")))
+				return false;
 		return true;
 	}
 	
@@ -361,7 +367,7 @@ class Controller implements Observer{
 			}
 			//car parks
 			if(e.getValue().equals("parked"))
-				command("withdraw 10 " + e.getSubject() + " " + origin.city.id);//charge vehicle for parking 1 hr
+				command("parking 10 " + e.getSubject() + " " + origin.city.id);//charge vehicle for parking 1 hr
 		}
 		//CO2
 		if(e.getType().equals("co2meter")){
@@ -396,7 +402,7 @@ class Controller implements Observer{
 			if(e.getValue().startsWith("what_movies_are_showing_tonight?"))//what movies are showing
 				origin.action("says casablanca displays poster\n");//casablanca
 			if(e.getValue().startsWith("reserve_2_seats_for_the_9 pm_showing_of_Casablanca")){//reserve two seats
-				if(command("withdraw 10 " + e.getSubject() + " " + origin.city.id)) //charge person for two seats 10 units
+				if(command("parking 10 " + e.getSubject() + " " + origin.city.id)) //charge person for two seats 10 units
 					origin.action("says seats reserverd\n");//say seats reserved
 				else
 					origin.action("insufficient funds");
@@ -428,7 +434,7 @@ public class ControllerService {
         for(String s:lines){
             if(!s.equals(""))
                 finalStringBuilder.append(s).append(System.getProperty("line.separator"));
-        }  
+        }
         commands = finalStringBuilder.toString();
         //process each line
         Controller c = new Controller();
