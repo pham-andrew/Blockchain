@@ -1,262 +1,528 @@
-//ledger
+//controller service
 //andrew pham anp6338@g.harvard.edu
 
-package com.cscie97.ledger;
-
 import java.util.*;
+import java.util.HashMap;
+import javafx.util.Pair;
+import java.util.regex.*;
+import java.nio.file.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
 import java.security.*;
 
-//structure holding bank account balances
-class Account {
-    String address;
-    int balance;
+//EVENT
+//an event has a type value and subject
+class Event{
+	String type, value, subject;
+	void setEvent(String t, String v, String s){
+		type=t; value=v; subject=s;
+	}
+	String getType(){return type;}
+	String getValue(){return value;}
+	String getSubject(){return subject;}
 }
 
-//structure of payment info
-class Transaction {
-    String transactionId;
-    String payer, receiver, note;
-    int amount, fee;
+//OBSERVER PATTERN DESIGN
+interface Observer{
+	public void update(Event e, Device origin) throws CommandException;
+}
+interface Subject{
+	public void notify(Event e) throws CommandException;
 }
 
-//structure holding 10 transactions and its hash
-class Block {
-    Transaction[] transactions = new Transaction[10];
-    int currentTransaction=0;
-    Map<String, Account> accounts = new HashMap<>();
-    int blockNumber;
-    String previousHash, hash;
-    void setBlock(int n, String p, String h){
-        blockNumber=n;
-        previousHash=p;
-        hash=h;
+//DEVICE
+//A deivce can receiver commands and create events from sensors
+class Device implements Subject{
+	String id;
+	Map<String, String> sensors = new HashMap();//values for microphone, camera, thermemeter, and co2 meter held in sensors
+	Pair<String, String> location;
+	City city;
+	Map<String, String> getSensorData(){
+		return sensors;
+	}
+	void action(String command){
+		System.out.println(id +": "+ command);
+	}
+	Controller c;
+	Device self;
+	public void notify(Event e) throws CommandException{
+		c.update(e, self);
+	}
+	Event sensorEvent(Event e) throws CommandException{
+		sensors.put(e.type, e.value);
+		notify(e);
+		return e;
+	}
+}
+
+//VIRTUAL DEVICE
+//A virtual devices holds the state of the device.
+//Virtual devices receive events and passes them to the controller.
+//Virtual devices receive commands and pass them to the device.
+class VirtualDevice{
+	String id, type;
+	Pair<String, String> location;
+	Map<String, String> state = new HashMap();//state also records required attributes status and enabled
+	Event e = new Event();//to be set by physical device or simulator
+	Device d = new Device();
+	void defVDevice(String t, String i, Pair l, String en, Controller c, City city){
+		type=t; id=i; location=l;
+		state.put("enabled", en);
+		d.c=c; d.location=l; d.self=d; d.city=city; d.id=id;
+	}
+	String getInfo(){
+		StringBuilder str = new StringBuilder();
+		str.append(
+			  "ID: "+id+"\n"+
+			  "Type: "+type+"\n"+
+			  "Lat: "+location.getKey()+" Lon: "+location.getValue()+"\n"+
+			  "State: "+state+"\n"+
+			  "Event: "+"  Type: " + e.type + " Value: " + e.value + " Subject: " + e.subject+"\n");
+		return str.toString();
+	}
+	void sensorEvent(Event event) throws CommandException{
+		e=d.sensorEvent(event);
+	}
+	void command(String command){
+		d.action(command);
+	}
+}
+
+//CITY
+//A city holds people and devices.
+class City{
+	String id, name, account;
+	Pair<String, String> location;
+	int radius;
+	Map<String, VirtualDevice> vDevices = new HashMap();
+	Map<String, Person> people = new HashMap();
+	void setInfo(String i, String n, String a, Pair l, int r){
+		id=i; name=n; account=a; location=l; radius=r;
+	}
+	//returns string of id, name, account, location, people, and IoT devices
+	String getInfo(){
+		//add all the people's ids to a list
+		List<String> names = new ArrayList<>(people.keySet());
+		//add all the devices ids to a list
+		List<String> devices = new ArrayList<>(vDevices.keySet());
+		//build a string with all the info
+		StringBuilder str = new StringBuilder();
+		str.append("City: "+id+"\n"+
+			  "Name: "+name+"\n"+
+			  "Account: "+account+"\n"+
+			  "Lat: "+location.getKey()+" Lon: "+location.getValue()+"\n"+
+			  "People: "+names+"\n"+
+			  "Devices: "+devices+"\n");
+		return str.toString();
+	}
+}
+
+//PERSON
+//A person can be a resident or visitor.
+//A persons attributes are all stired in Hashmap attributes.
+class Person{
+	Map<String, String> attributes = new HashMap();
+	Boolean isResident = true;
+	String id;
+	Map<String, String> getInfo(){
+		return attributes;
+	}
+}
+
+//LEDGER
+//simple ledger to keep track of bank account balances
+class Ledger{
+	Map<String, Integer> accounts = new HashMap();//key is account id, value is balance
+	public void createAccount(Integer amount, String accountid){
+		accounts.put(accountid, amount);
+	}
+	public void deposit(Integer amount, String account){
+		accounts.put(account, accounts.get(account)+amount);
+		System.out.println("Deposited " + amount + " to " + account + "\n");
+	}
+	public boolean withdraw(Integer amount, String account){
+		if(accounts.get(account)-amount > 0){
+			accounts.put(account, accounts.get(account)+amount);
+			System.out.println("Withdrew " + amount + " from " + account + "\n");
+			return true;
+		}
+		return false;
+	}
+}
+
+//CONTROLLER
+//The controller receives and processes all commands.
+//The controller prints to the console
+//The controller keeps a list of all cities it manages.
+class Controller implements Observer{
+    Ledger ledger = new Ledger();
+    Authenticator auth = new Authenticator();
+	Controller c;
+	Map<String, City> cities = new HashMap();
+	//command controls, defines, and updates people, cities, and devices. returns true if command executed
+	boolean command(String command) throws CommandException{
+		//if empty command, ignore
+		if("".equals(command))
+			return false;
+		//tokenize command by spaces unless in quotes
+		List<String> l = new ArrayList<String>();
+		Matcher m = Pattern.compile("([^\"]\\S*|\".+?\")\\s*").matcher(command);
+		while (m.find())
+    		l.add(m.group(1));
+    	String words[] = l.toArray(new String[l.size()]);
+		words[words.length-1] = words[words.length-1].replace("\n", "").replace("\r", "");//get rid of newline char
+		//define
+		if ("define".equals(words[0])) {
+			//city
+			if("city".equals(words[1])){
+				City c = new City();
+				c.setInfo(words[2], words[4], words[6], new Pair<String, String>(words[8], words[10]), Integer.parseInt(words[12]));
+				cities.put(words[2], c);
+			}
+			//people
+			else if("resident".equals(words[1]) || "visitor".equals(words[1])){
+				Person r = new Person();
+				cities.get(words[2]).people.put(words[3], r);//assign person to city
+				//set attributes
+				r.id=words[3];
+				for(int i=4;i<words.length;i+=2)
+					r.attributes.put(words[i], words[i+1]);
+				//set isResident
+				if("visitor".equals(words[1]))
+					r.isResident=false;
+			}
+			//devices
+			else{
+				VirtualDevice d = new VirtualDevice();
+				cities.get(words[2]).vDevices.put(words[3], d);//add to devices list of that city
+				d.defVDevice(words[1], words[3], new Pair<String, String>(words[5], words[7]), words[9], c, cities.get(words[2]));
+				for(int i=8;i<words.length;i+=2)
+					d.state.put(words[i], words[i+1]);
+			}
+		}
+		//show
+		if ("show".equals(words[0])) {
+			//if city id can't be found, throw exception
+			if(cities.get(words[2])==null)
+				throw new CommandException("Cannot find city");
+			//print
+			if("city".equals(words[1]))
+				System.out.println(cities.get(words[2]).getInfo());
+			if("person".equals(words[1])){
+				//exception if cant find person
+				if(cities.get(words[2]).people.get(words[3])==null)
+					throw new CommandException("Cannot find person");
+				System.out.println(cities.get(words[2]).people.get(words[3]).getInfo() + "\n");
+			}
+			if("device".equals(words[1])){
+				//exception if cant find device
+				if(words.length>3)
+					if(cities.get(words[2]).vDevices.get(words[3])==null)
+						throw new CommandException("Cannot find device");
+				//show devices
+				if(words.length>3){//if device is specified
+					System.out.println("\n" + cities.get(words[2]).vDevices.get(words[3]).getInfo());
+				}else{//show all devices in city
+					Map<String, VirtualDevice> map = cities.get(words[2]).vDevices;
+					for(Map.Entry<String, VirtualDevice> entry : map.entrySet())
+						System.out.println("\n" + entry.getValue().getInfo());
+				}
+			}
+		}
+		//update
+		if ("update".equals(words[0]))
+			//person
+			if("resident".equals(words[1]) || "visitor".equals(words[1]) || "person".equals(words[1]))
+				for(int i=4;i<words.length;i+=2)
+					cities.get(words[2]).people.get(words[3]).attributes.put(words[i], words[i+1]);		
+			//device
+			else
+				//store first token as key in device state, second as value, repeat
+				for(int i=4;i<words.length;i+=2)
+					cities.get(words[2]).vDevices.get(words[3]).state.put(words[i], words[i+1]);
+		
+		//event
+		if ("create".equals(words[0]) && "sensor-event".equals(words[1])) {
+			Event e = new Event();
+			if(words.length==10){//if there is a subject
+				e.setEvent(words[5], words[7], words[9]);
+				cities.get(words[2]).vDevices.get(words[3]).sensorEvent(e);
+			}else{
+				e.setEvent(words[5], words[7], "");
+				cities.get(words[2]).vDevices.get(words[3]).sensorEvent(e);
+			}
+		}
+		
+		//triggered commands
+		//command
+		if("command".equals(words[0]))
+			cities.get(words[1]).vDevices.get(words[2]).command(words[3]);
+		//announce
+		if("announce".equals(words[0])){
+			for(Map.Entry<String, VirtualDevice> entry : cities.get(words[2]).vDevices.entrySet())
+			    entry.getValue().command("announcing " + words[1] + " in " + words[2]);
+			System.out.println();
+		}
+		//scramble: half robots go to help half go to evacuate
+		if("scramble".equals(words[0])){
+			boolean helping=true;//we need to send half to help so every other will be helping
+			for(Map.Entry<String, VirtualDevice> entry : cities.get(words[1]).vDevices.entrySet()){
+				if(helping){
+					entry.getValue().command("addressing " + words[2] + " at " + words[3] + " " + words[4]);
+					helping=false;
+				}else{
+					entry.getValue().command("helping people find shelter");
+					helping=true;
+				}
+			}
+			System.out.println();
+		}
+		//address
+		if("address".equals(words[0])){
+			for(Map.Entry<String, VirtualDevice> entry : cities.get(words[2]).vDevices.entrySet()) {
+			    if(entry.getValue().type.equals("robot")){
+			    	entry.getValue().command("addressing " + words[1] + " at " + words[3] + " " + words[4]);
+			    	break;
+			    }
+			}
+			System.out.println();
+		}
+		//disable cars
+		if("disable_cars".equals(words[0])){
+			for(Map.Entry<String, VirtualDevice> entry : cities.get(words[1]).vDevices.entrySet()) {
+			    if(entry.getValue().type.equals("vehicle")){
+			    	entry.getValue().state.put("enabled", "false");
+			    	System.out.println(entry.getValue().id + " disabled");
+			    }
+			}
+			System.out.println();
+		}
+		//enable cars
+		if("enable_cars".equals(words[0])){
+			for(Map.Entry<String, VirtualDevice> entry : cities.get(words[1]).vDevices.entrySet())
+				if(entry.getValue().type.equals("vehicle")){
+			    	entry.getValue().state.put("enabled", "true");
+				    System.out.println(entry.getValue().id + " enabled");
+				}
+			System.out.println();
+		}
+		//find child
+		if("find".equals(words[0])){
+			String lat = cities.get(words[2]).people.get(words[1]).getInfo().get("lat");//locate child
+			String lon = cities.get(words[2]).people.get(words[1]).getInfo().get("long");
+			for(Map.Entry<String, VirtualDevice> entry : cities.get(words[2]).vDevices.entrySet())
+				if(entry.getValue().type.equals("robot")){
+				    	entry.getValue().command("retrieving " + words[1] + " at " + lat + " " + lon);
+				    	break;
+				}
+			System.out.println();
+		}
+		
+		//ledger commands
+		//withdraw
+		if("withdraw".equals(words[0]))
+			if(!ledger.withdraw(Integer.parseInt(words[1]), cities.get(words[3]).people.get(words[2]).getInfo().get("account")))
+				return false;
+		//deposit
+		if("deposit".equals(words[0]))
+			ledger.deposit(Integer.parseInt(words[1]), cities.get(words[3]).people.get(words[2]).getInfo().get("account"));
+		if("create-account".equals(words[0]))
+			ledger.createAccount(Integer.parseInt(words[2]), words[1]);
+		//parking
+		if("parking".equals(words[0]))
+			if(!ledger.withdraw(Integer.parseInt(words[1]), cities.get(words[3]).people.get(cities.get(words[3]).vDevices.get(words[2]).state.get("driver")).getInfo().get("account")))
+				return false;
+		return true;
+	}
+	
+	//update checks if any rules are triggered and executes commands if necessary
+	int CO2Count;
+	boolean carsOn;
+	Controller(){CO2Count=0; carsOn=true;}//needed to count how many devices report
+	public void update(Event e, Device origin) throws CommandException{
+		//camera
+		if(e.getType().equals("camera")){
+			//emergency
+			if(e.getValue().equals("fire")||e.getValue().equals("flood")||e.getValue().equals("earthquake")||e.getValue().equals("weather")){
+				command("announce " + e.getValue() + " " + origin.city.id);//announce
+				command("scramble" + origin.city);//send half robots to help and send half robots to evacuate others
+			}
+			if(e.getValue().equals("traffic_accident")){//traffic accident
+				origin.action("announcing stay calm help is on the way");//reporting device announces stay calm help is on way
+				command("address traffic_accident " + origin.city.id + " " + origin.location.getKey() + " " + origin.location.getValue());//address emergency at location
+			}
+			//litter
+			if(e.getValue().equals("littering")){
+				origin.action("says please do not litter");//please do not litter
+				command("address litter " + origin.city.id + " " + origin.location.getKey() + " " + origin.location.getValue());//robot cleans garbage
+				command("withdraw 10 " + e.getSubject() + " " + origin.city.id); //charge person for two seats 10 units
+			}
+			if(e.getValue().equals("person_seen")){//person seen
+				command("update person " + origin.city.id + " " + e.subject + " lat " + origin.location.getKey() + " long " + origin.location.getValue());//update person location
+			}
+			//person boards bus
+			if(e.getValue().equals("boards_bus")){
+				origin.action("says hello good to see you\n");//hello good to see you
+				command("withdraw 10 " + e.getSubject() + " " + origin.city.id);//charge person for bus
+			}
+			//car parks
+			if(e.getValue().equals("parked"))
+				command("parking 10 " + e.getSubject() + " " + origin.city.id);//charge vehicle for parking 1 hr
+		}
+		//CO2
+		if(e.getType().equals("co2meter")){
+			if(Integer.parseInt(e.getValue())>=1000){//co2 level over 1000
+				//if reported by more than 3 devices, disable all cars
+				CO2Count++;
+				if(CO2Count>3 && carsOn==true){
+					command("disable_cars " + origin.city.id);
+					CO2Count=0;
+					carsOn=false;
+				}
+			}else if(Integer.parseInt(e.getValue())<1000){
+				//if reported by more than 3 devices, enable all cars
+				CO2Count++;
+				if(CO2Count>=3 && carsOn==false){//co2 level under 1000
+					command("enable_cars " + origin.city.id);
+					CO2Count=0;
+					carsOn=true;
+				}
+			}
+		}
+		//microphone
+		if(e.getType().equals("microphone")){
+			if(e.getValue().equals("broken_glass_sound"))//sound of broken glass
+				command("address broken_glass " + origin.city.id + " " + origin.location.getKey() + " " + origin.location.getValue());//robot cleans up broken glass at location
+			if(e.getValue().startsWith("find")){//asking to help find person
+				command("find " + e.getValue().substring(5) + " " + origin.city.id);//locate and retrieve child
+				origin.action("says stay here we will retrieve the child\n");
+			}
+			if(e.getValue().startsWith("Does_this_bus_go_to_central_square?"))//bus route help
+				origin.action("says yes\n");
+			if(e.getValue().startsWith("what_movies_are_showing_tonight?"))//what movies are showing
+				origin.action("says casablanca displays poster\n");//casablanca
+			if(e.getValue().equals("reserve_2_seats_for_the_9_pm_showing_of_Casablanca")){//reserve two seats
+				if(command("withdraw 10 " + e.getSubject() + " " + origin.city.id)) //charge person for two seats 10 units
+					origin.action("says seats reserverd\n");//say seats reserved
+				else
+					origin.action("insufficient funds");
+			}
+		}
+	}
+}
+
+//COMMAND EXCEPTION
+//Checks if we are referencing an object correctly in our commands
+class CommandException extends Exception{
+    String reason;
+    public CommandException(String r){
+        reason = r;
     }
 }
 
-//structure to keep track of leaf blocks
-class BlockChainLink{
-    Block current;
-    BlockChainLink left, right;
+interface Visitor{
+	public void visit();
+}
+interface Visitable{
+	public void accept();
+}
+interface Composite{
+	List<Object> children;
+	String id;
+	String name;
+	String description;
+	public void add();
+	public void getChildren();
 }
 
-//manages accounts and commands
-class Ledger {
-    String name, description, seed;
-    BlockChainLink link;
-    Map<String, Transaction> masterTransactionList = new HashMap<String, Transaction>();
-    
-    //initializes the ledger
-    void init(Block genesis) {
-        //create master account
-        Account account = new Account();
-        account.address="master";
-        account.balance=Integer.MAX_VALUE;
-        //create genesis block
-        link = new BlockChainLink();
-        link.current=genesis;
-        link.current.blockNumber=0;
-        link.current.accounts.put("master", account);
-    }
-    
-    //creates a new account with no balance
-    String createAccount(String accountId) {
-        Account account = new Account();
-        account.address=accountId;
-        account.balance=0;
-        link.current.accounts.put(accountId, account);
-        return accountId;
-    }
-    
-    //does math for transaction and creates,links,hashes blocks when they reach 10 transactions
-    String processTransaction(Transaction transaction) throws LedgerException, NoSuchAlgorithmException {
-        //check if sufficient funds
-        if(link.current.accounts.get(transaction.payer).balance-transaction.amount-transaction.fee<0)
-            //throw new LedgerException("processTransaction", "not enough funds"); 
-            return "not";
-        //check for minimum fee
-        if(transaction.fee<10)
-            //throw new LedgerException("processTransaction", "not enough fee");
-            return "not";
-        //perform transaction
-        link.current.accounts.get(transaction.payer).balance=getAccountBalance(transaction.payer)-transaction.amount-transaction.fee;//update payer account
-        link.current.accounts.get(transaction.receiver).balance=getAccountBalance(transaction.receiver)+transaction.amount;//update receiver account
-        link.current.transactions[link.current.currentTransaction]=transaction;//add transaction to block
-        link.current.currentTransaction++;
-        masterTransactionList.put(transaction.transactionId, transaction);
-        //if on tenth transaction save and create new block
-        if(link.current.currentTransaction==10){
-            //create and save hash with merkle tree
-            String[] leafHashes = new String[10];
-            for(int i=0;i<10;i++)
-                leafHashes[i] = Integer.toString(link.current.transactions[i].hashCode());
-            String[] branchHashes = new String[5];
-            int j=0;
-            for(int i=0;i<5;i++){
-                branchHashes[i] = leafHashes[j]+leafHashes[j+1].hashCode();
-                j+=2;
-            }
-            String[] branchHashes2 = new String[3];
-            branchHashes2[0] = branchHashes[0]+branchHashes[1].hashCode();
-            branchHashes2[1] = branchHashes[2]+branchHashes[3].hashCode();
-            branchHashes2[2] = branchHashes[4]+branchHashes[4].hashCode();
-            String[] branchHashes3 = new String[2];
-            branchHashes3[0] = branchHashes2[0]+branchHashes2[1].hashCode();
-            branchHashes3[1] = branchHashes2[2]+branchHashes2[2].hashCode();
-            String rootHash = branchHashes3[0]+branchHashes3[1].hashCode();
-            //seed
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            digest.update(seed.getBytes(StandardCharsets.UTF_8));
-            link.current.hash = Arrays.toString(digest.digest(rootHash.getBytes()));
-            
-            //create next link
-            BlockChainLink newLink = new BlockChainLink();
-            //copy over info from old block except transactions
-            newLink.current = new Block();
-            newLink.current.accounts=link.current.accounts;
-            newLink.current.previousHash=link.current.hash;
-            newLink.current.blockNumber++;
-            //clear transactions for new link
-            newLink.current.currentTransaction = 0;
-            newLink.current.transactions = new Transaction[10];
-            link.right = newLink;
-            newLink.left = link;
-            link = newLink;
-            System.out.println("New block created");
-        }
-        return transaction.transactionId;
-    }
-    
-    int getAccountBalance(String address) {
-        return link.current.accounts.get(address).balance;
-    }
-    Map getAccountBalances() {
-        return link.current.accounts;
-    }
-    
-    //returns block by blocknumber
-    Block getBlock(int blockNumber) throws LedgerException {
-        return getBlock(blockNumber, link);
-    }
-    
-    //recursive function to search down the tree
-    Block getBlock(int blockNumber, BlockChainLink b) throws LedgerException{
-        if(b.current.blockNumber==blockNumber)
-            return b.current;
-        if(b.left!=null && b.current.blockNumber>blockNumber)
-            return getBlock(blockNumber, b.left);
-        if(b.right!=null && b.current.blockNumber<blockNumber)
-            return getBlock(blockNumber, b.right);
-        throw new LedgerException("getBlock", "cant find block number");
-    }
-    
-    //returns transaction by id
-    Transaction getTransaction(String transactionId) {
-        return masterTransactionList.get(transactionId);
-    }
-    
-    //ensure account balances correct, ensure each block has 10 transactions
-    void validate() throws LedgerException {
-        //ensure each block has 10 transactions
-        for(int i=0;i<link.current.currentTransaction-1;i++)
-            if(getBlock(i).currentTransaction!=9)//ensure each block has 10 transactions
-                throw new LedgerException("validate", "some block has more than 10 transactions");
-        //ensure account balances are correct
-        Map<String, Account> accountsCopy = new HashMap<>();
-        accountsCopy.putAll(link.current.accounts);
-        //zero out all accounts and max out master
-        accountsCopy.entrySet().forEach(entry -> {
-            entry.getValue().balance=0;
-        });
-        accountsCopy.get("master").balance=Integer.MAX_VALUE;
-        //do all transaction in master transaction list over
-        for (Map.Entry<String, Transaction> entry : masterTransactionList.entrySet()){
-            accountsCopy.get(entry.getValue().receiver).balance+=entry.getValue().amount;
-            accountsCopy.get(entry.getValue().payer).balance-=entry.getValue().amount+entry.getValue().fee;
-        }
-        //check to see it the copy matches the original
-        if(!accountsCopy.equals(link.current.accounts))
-            throw new LedgerException("validate", "accounts dont add up...");
-    }
+//AUTHENTICATION TOKEN
+class AuthToken{
+	String id;
+	int expiration;
+	boolean active;
 }
 
-class LedgerException extends Exception{
-    String action, reason;
-    LedgerException(String a, String r) {
-        action=a;
-        reason=r;
-    }
+//AUTHENTICATOR
+class Authenticator implements Visitor{
+	Map<String, User> users = new HashMap();
+	Map<String, Object> entitlements = new HashMap();
+	AuthToken hasPermission(String command, String id){
+		AuthToken a = new AuthToken{};
+		a.active=false;
+		if(users.get(id).visit(command)){
+			a.id=command;
+			a.expiration=System.currentTimeMillis() + 120000;
+			a.active=true;
+		}
+		return a;
+	}
+	void definePermission(String id, String name, String description){
+		Permission p = new Permission(); 
+		p.id=id; p.name=name; p.description=description;
+		entitlements.add(id, p);
+	}
+	void defineRole(String id, String name, String description){
+		Role r = new Role();
+		r.id=id; r.name=name; r.description=description;
+		entitlements.add(id, r);
+	}
+	void defineResource(String id, String name, String description){
+		Resource r = new Resource();
+		r.id=id; r.name=name; r.description=description;
+		entitlements.add(id, r);
+	}
+	void addPermission(String permission, String role){
+		entitlements.get(role).add(permission, entitlements.get(role));
+	}
+	void createUser(String id, String username){
+		User u = new User();
+		u.id=id; u.username=username;
+		users.add(id, u);
+	}
+	void addCredential(String id, String credential){
+		users.get(id).credential=credential;
+	}
+	void addRole(String id, String role){
+		users.get(id).roles.add(role, entitlements.get(role))
+	}
+	void printOut(){
+		System.out.println("users: " + users);
+		System.out.println("defined entitlements: " + entitlements);
+		for(Map.Entry<String, HashMap> entry : selects.entrySet()) {
+			entry.getValue().printOut();
+		}
+	}
 }
 
-class CommandProcessor {
-    //processcommand takes individual commands
-    void processCommand(String command, Ledger ledger) throws LedgerException, NoSuchAlgorithmException {
-        String words[] = command.split(" ");
-        words[words.length-1] = words[words.length-1].replace("\n", "").replace("\r", "");//get rid of newline char
-        if ("create-account".equals(words[0])) {
-            ledger.createAccount(words[1]);
-            System.out.println("Account created: " + words[1]);
-        }
-        if ("process-transaction".equals(words[0])) {
-            Transaction transaction = new Transaction();
-            transaction.transactionId = words[1];
-            transaction.amount = Integer.parseInt(words[3]);
-            transaction.fee = Integer.parseInt(words[5]);
-            int payer = 0;
-            for (int i = 0; i < words.length; i++)
-                if ("payer".equals(words[i]))
-                    payer = i;
-            transaction.note = words[7];
-            for (int i = 7; i < payer; i++){
-                ledger.description += words[i];
-            }
-            //process
-            transaction.payer=words[payer+1];
-            transaction.receiver=words[payer+3];
-            System.out.println("Transaction " + ledger.processTransaction(transaction)+ " processed\n");
-        }
-        if ("get-account-balance".equals(words[0]))
-            System.out.println(words[1] +": "+ ledger.getAccountBalance(words[1]));
-        if ("get-account-balances".equals(words[0])){
-            @SuppressWarnings("unchecked")
-            Map<String, Account> accounts = ledger.getAccountBalances();
-            StringBuilder balances = new StringBuilder();
-            accounts.entrySet().forEach(entry -> {
-                balances.append(entry.getValue().address).append(": ").append(entry.getValue().balance).append("\n");
-            });
-            System.out.println(balances.toString());
-        }
-        if ("get-block".equals(words[0])) {
-            Block block = ledger.getBlock(Integer.parseInt(words[1]));
-            System.out.println("Block Number:" + block.blockNumber);
-            if(block.currentTransaction<9)
-                System.out.println("Block is not complete yet");
-            else{
-                System.out.println("Block Hash: " + block.hash);
-                System.out.print("Block Transactions: ");
-                for(int i=0;i<block.transactions.length-1;i++)
-                    System.out.print(block.transactions[i].transactionId+" ");
-                System.out.println();
-            }
-        }
-        if ("get-transaction".equals(words[0])) {
-            System.out.println("Transaction Details\nID: " + ledger.getTransaction(words[1]).transactionId);
-            System.out.println("Payer: " + ledger.getTransaction(words[1]).payer);
-            System.out.println("Receiver: " + ledger.getTransaction(words[1]).receiver);
-            System.out.println("Amount: " +ledger.getTransaction(words[1]).amount);
-        }
-        if ("validate".equals(words[0])) {
-            ledger.validate();
-            System.out.println("Validated\n");
-        }
-    }
-    
-    //takes text file, splits it into lines, and feeds to processCommand
-    void processCommandFile(String commandfile) throws IOException, CommandProcessorException, LedgerException, NoSuchAlgorithmException {
-        String commands = new String(Files.readAllBytes(Paths.get(commandfile)));
-        
+//USER
+class User{
+	Map<String, Permission> permissions = new HashMap();
+	Map<String, Role> roles = new HashMap();
+	String id, username, credential;
+	void assignRole(Role r){
+		roles.add(r);
+	}
+	void assignPermission(Permission p){
+		permissions.add(p);
+	}
+	void printOut(){
+		System.out.println("id: " + id + " roles: " + roles + " permissions: " + permissions);
+	}
+}
+
+//Entitlements
+class Permission implements Composite, Visitable{
+	void add(Object entitlement){
+		children.add(entitlement);
+	}
+}
+
+class Role implements Composite, Visitable{}
+class Resource implements Composite, Visitable{}
+
+public class TestDriver {
+    public static void main(String[] args) throws IOException, CommandException {
+    	String commands = new String(Files.readAllBytes(Paths.get("C:\\Users\\Andrew\\Documents\\JCreator Pro\\MyProjects\\authenticator\\src\\script.txt")));
         //remove comment lines
         String lines[] = commands.split("\n");
         for(int i=0;i<lines.length;i++)
@@ -267,56 +533,15 @@ class CommandProcessor {
         for(String s:lines){
             if(!s.equals(""))
                 finalStringBuilder.append(s).append(System.getProperty("line.separator"));
-        }  
-        commands = finalStringBuilder.toString();
-        
-        //ensure that the ledger is created
-        String words[] = commands.split(" ");
-        if ("create-ledger".equals(words[0])) {
-            Ledger ledger = new Ledger();
-            System.out.println("Ledger Created\n");
-            
-            //parse name, desc, seed
-            ledger.name = words[1];
-            int seed = 0;
-            for (int i = 0; i < words.length; i++) {
-                if ("seed".equals(words[i]))
-                    seed = i;
-            }
-            ledger.description = words[3];
-            for (int i = 3; i < seed; i++)
-                ledger.description += words[i];
-            ledger.seed = words[seed + 1];
-            
-            //initialize the blockchain
-            Block block = new Block();
-            block.setBlock(0,"0","0");
-            ledger.init(block);
-            
-            //read each line into process command
-            for (String line : lines)
-                processCommand(line, ledger);
-            
-        } else {
-            System.out.println("Must create ledger first!\n");
-            throw new CommandProcessorException(words[0],"must create ledger first",0);
         }
-    }
-}
-
-class CommandProcessorException extends Exception{
-    String command, reason;
-    int lineNumber;
-    public CommandProcessorException(String c, String r, int l){
-        command = c;
-        reason = r;
-        lineNumber = l;
-    }
-}
-
-public class TestDriver {
-    public static void main(String[] args) throws IOException, CommandProcessorException, LedgerException, NoSuchAlgorithmException {
-        CommandProcessor cp = new CommandProcessor();
-        cp.processCommandFile("com/cscie97/ledger/ledger.script");
+        commands = finalStringBuilder.toString();
+        //process each line
+        Controller c = new Controller();
+        c.c=c;
+        for (String line : lines){
+        	if(line.length()>1)//if not empty
+        		System.out.println(line);//print command to console
+        	c.command(line);
+        }
     }
 }
