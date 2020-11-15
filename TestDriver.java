@@ -421,36 +421,33 @@ class CommandException extends Exception{
 }
 
 interface Visitor{
-	public void visit();
+	public boolean visit(String id, String user);
 }
 interface Visitable{
-	public void accept();
+	public boolean accept(String id);
 }
 interface Composite{
-	List<Object> children;
-	String id;
-	String name;
-	String description;
-	public void add();
-	public void getChildren();
+	public void add(String id, Permission p, Resource r);
 }
 
 //AUTHENTICATION TOKEN
 class AuthToken{
 	String id;
-	int expiration;
+	long expiration;
 	boolean active;
 }
 
 //AUTHENTICATOR
 class Authenticator implements Visitor{
 	Map<String, User> users = new HashMap();
-	Map<String, Object> entitlements = new HashMap();
-	AuthToken hasPermission(String command, String id){
-		AuthToken a = new AuthToken{};
+	Map<String, Role> roles = new HashMap();
+	Map<String, Permission> permissions = new HashMap();
+	Map<String, Resource> resources = new HashMap();
+	AuthToken hasPermission(String user, String permission){
+		AuthToken a = new AuthToken();
 		a.active=false;
-		if(users.get(id).visit(command)){
-			a.id=command;
+		if(visit(permission, user)){
+			a.id=permission;
 			a.expiration=System.currentTimeMillis() + 120000;
 			a.active=true;
 		}
@@ -459,66 +456,116 @@ class Authenticator implements Visitor{
 	void definePermission(String id, String name, String description){
 		Permission p = new Permission(); 
 		p.id=id; p.name=name; p.description=description;
-		entitlements.add(id, p);
+		permissions.put(id, p);
 	}
 	void defineRole(String id, String name, String description){
 		Role r = new Role();
 		r.id=id; r.name=name; r.description=description;
-		entitlements.add(id, r);
+		roles.put(id, r);
 	}
 	void defineResource(String id, String name, String description){
 		Resource r = new Resource();
 		r.id=id; r.name=name; r.description=description;
-		entitlements.add(id, r);
+		resources.put(id, r);
 	}
 	void addPermission(String permission, String role){
-		entitlements.get(role).add(permission, entitlements.get(role));
+		roles.get(role).add(permission, permissions.get(permission), null);
 	}
 	void createUser(String id, String username){
 		User u = new User();
 		u.id=id; u.username=username;
-		users.add(id, u);
+		users.put(id, u);
 	}
 	void addCredential(String id, String credential){
 		users.get(id).credential=credential;
 	}
 	void addRole(String id, String role){
-		users.get(id).roles.add(role, entitlements.get(role))
+		users.get(id).roles.put(role, roles.get(role));
 	}
 	void printOut(){
 		System.out.println("users: " + users);
-		System.out.println("defined entitlements: " + entitlements);
-		for(Map.Entry<String, HashMap> entry : selects.entrySet()) {
+		System.out.println("defined entitlements: " + permissions + roles + resources);
+		for(Map.Entry<String, User> entry : users.entrySet()) {
 			entry.getValue().printOut();
 		}
+	}
+	public boolean visit(String id, String user){
+		if(users.get(user).accept(id))
+			return true;
+		return false;
 	}
 }
 
 //USER
-class User{
+class User implements Visitable{
 	Map<String, Permission> permissions = new HashMap();
 	Map<String, Role> roles = new HashMap();
 	String id, username, credential;
-	void assignRole(Role r){
-		roles.add(r);
+	void assignRole(String id, Role r){
+		roles.put(id, r);
 	}
-	void assignPermission(Permission p){
-		permissions.add(p);
+	void assignPermission(String id, Permission p){
+		permissions.put(id, p);
 	}
 	void printOut(){
 		System.out.println("id: " + id + " roles: " + roles + " permissions: " + permissions);
 	}
-}
-
-//Entitlements
-class Permission implements Composite, Visitable{
-	void add(Object entitlement){
-		children.add(entitlement);
+	public boolean accept(String id){
+		for(Map.Entry<String, Permission> entry : permissions.entrySet())
+			if(entry.getValue().accept(id))
+				return true;
+		for(Map.Entry<String, Role> entry : roles.entrySet())
+			if(entry.getValue().accept(id))
+				return true;
+		return false;
 	}
 }
 
-class Role implements Composite, Visitable{}
-class Resource implements Composite, Visitable{}
+//Entitlements
+class Permission implements Visitable{
+	String id;
+	String name;
+	String description;
+	public boolean accept(String i){
+		if(id.equals(i))
+			return true;
+		return false;
+	}
+}
+class Resource implements Visitable{
+	String id;
+	String name;
+	String description;
+	public boolean accept(String i){
+		if(id.equals(i))
+			return true;
+		return false;
+	}
+}
+class Role implements Composite, Visitable{
+	Map<String, Permission> permissions = new HashMap();
+	Map<String, Resource> resources = new HashMap();
+	String id;
+	String name;
+	String description;
+	public void add(String id, Permission p, Resource r){
+		if(r==null)
+			permissions.put(id, p);
+		else
+			resources.put(id, r);
+	}
+	public boolean accept(String i){
+		for(Map.Entry<String, Permission> entry : permissions.entrySet()) {
+			if(entry.getValue().accept(i))
+				return true;
+		}
+		for(Map.Entry<String, Resource> entry : resources.entrySet()) {
+			if(entry.getValue().accept(i))
+				return true;
+		}
+		return false;
+	}
+}
 
 public class TestDriver {
     public static void main(String[] args) throws IOException, CommandException {
