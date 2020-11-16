@@ -356,6 +356,10 @@ class Controller implements Observer{
 			commander=words[1];
 			credential=words[2];
 		}
+		if("logout".equals(words[0])){
+			commander="";
+			credential="";
+		}
 		//define permission
 		if("define_permission".equals(words[0]))
 			auth.definePermission(words[1],words[2],words[3]);
@@ -465,7 +469,7 @@ class Controller implements Observer{
 				//turn _ into spaces
 				String voiceCommand = e.getValue().replaceAll("_", " ");
 				//replace escape character for _
-				voiceCommand = e.getValue().replace("\\\\ ", "_");
+				voiceCommand = voiceCommand.replace("\\ ", "_");
 				//store current controller's session
 				String oldCommander = c.commander;
 				String oldCredential = c.credential;
