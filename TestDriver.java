@@ -24,10 +24,10 @@ class Event{
 
 //OBSERVER PATTERN DESIGN
 interface Observer{
-	public void update(Event e, Device origin) throws CommandException;
+	public void update(Event e, Device origin) throws CommandException, AuthException;
 }
 interface Subject{
-	public void notify(Event e) throws CommandException;
+	public void notify(Event e) throws CommandException, AuthException;
 }
 
 //DEVICE
@@ -45,10 +45,10 @@ class Device implements Subject{
 	}
 	Controller c;
 	Device self;
-	public void notify(Event e) throws CommandException{
+	public void notify(Event e) throws CommandException, AuthException{
 		c.update(e, self);
 	}
-	Event sensorEvent(Event e) throws CommandException{
+	Event sensorEvent(Event e) throws CommandException, AuthException{
 		sensors.put(e.type, e.value);
 		notify(e);
 		return e;
@@ -80,7 +80,7 @@ class VirtualDevice{
 			  "Event: "+"  Type: " + e.type + " Value: " + e.value + " Subject: " + e.subject+"\n");
 		return str.toString();
 	}
-	void sensorEvent(Event event) throws CommandException{
+	void sensorEvent(Event event) throws CommandException, AuthException{
 		e=d.sensorEvent(event);
 	}
 	void command(String command){
@@ -155,12 +155,14 @@ class Ledger{
 //The controller prints to the console
 //The controller keeps a list of all cities it manages.
 class Controller implements Observer{
-    Ledger ledger = new Ledger();
-    Authenticator auth = new Authenticator();
+    Ledger ledger = new Ledger();//singleton
+    Authenticator auth = new Authenticator();//singleton
 	Controller c;
+	String commander; String credential;
 	Map<String, City> cities = new HashMap();
 	//command controls, defines, and updates people, cities, and devices. returns true if command executed
-	boolean command(String command) throws CommandException{
+	boolean command(String command) throws CommandException, AuthException{
+		//command parsing
 		//if empty command, ignore
 		if("".equals(command))
 			return false;
@@ -171,33 +173,45 @@ class Controller implements Observer{
     		l.add(m.group(1));
     	String words[] = l.toArray(new String[l.size()]);
 		words[words.length-1] = words[words.length-1].replace("\n", "").replace("\r", "");//get rid of newline char
+		
+		//model commands
 		//define
 		if ("define".equals(words[0])) {
 			//city
 			if("city".equals(words[1])){
-				City c = new City();
-				c.setInfo(words[2], words[4], words[6], new Pair<String, String>(words[8], words[10]), Integer.parseInt(words[12]));
-				cities.put(words[2], c);
+				//check for city admin permissions
+				if(auth.hasPermission(commander, credential, "scms_define_city").active){//TODO AND TIME OUT
+					City c = new City();
+					c.setInfo(words[2], words[4], words[6], new Pair<String, String>(words[8], words[10]), Integer.parseInt(words[12]));
+					cities.put(words[2], c);
+				}
+				else throw new AuthException("No Permission");
 			}
 			//people
 			else if("resident".equals(words[1]) || "visitor".equals(words[1])){
-				Person r = new Person();
-				cities.get(words[2]).people.put(words[3], r);//assign person to city
-				//set attributes
-				r.id=words[3];
-				for(int i=4;i<words.length;i+=2)
-					r.attributes.put(words[i], words[i+1]);
-				//set isResident
-				if("visitor".equals(words[1]))
-					r.isResident=false;
+				//check for city admin permissions
+				if(auth.hasPermission(commander, credential, "scms_manage_city").active){
+					Person r = new Person();
+					cities.get(words[2]).people.put(words[3], r);//assign person to city
+					//set attributes
+					r.id=words[3];
+					for(int i=4;i<words.length;i+=2)
+						r.attributes.put(words[i], words[i+1]);
+					//set isResident
+					if("visitor".equals(words[1]))
+						r.isResident=false;
+				}
 			}
 			//devices
 			else{
-				VirtualDevice d = new VirtualDevice();
-				cities.get(words[2]).vDevices.put(words[3], d);//add to devices list of that city
-				d.defVDevice(words[1], words[3], new Pair<String, String>(words[5], words[7]), words[9], c, cities.get(words[2]));
-				for(int i=8;i<words.length;i+=2)
-					d.state.put(words[i], words[i+1]);
+				//check for device admin permissions
+				if(auth.hasPermission(commander, credential, "scms_manage_device").active){
+					VirtualDevice d = new VirtualDevice();
+					cities.get(words[2]).vDevices.put(words[3], d);//add to devices list of that city
+					d.defVDevice(words[1], words[3], new Pair<String, String>(words[5], words[7]), words[9], c, cities.get(words[2]));
+					for(int i=8;i<words.length;i+=2)
+						d.state.put(words[i], words[i+1]);
+				}
 			}
 		}
 		//show
@@ -233,13 +247,15 @@ class Controller implements Observer{
 		if ("update".equals(words[0]))
 			//person
 			if("resident".equals(words[1]) || "visitor".equals(words[1]) || "person".equals(words[1]))
-				for(int i=4;i<words.length;i+=2)
-					cities.get(words[2]).people.get(words[3]).attributes.put(words[i], words[i+1]);		
+				if(auth.hasPermission(commander, credential, "scms_manage_city").active)
+					for(int i=4;i<words.length;i+=2)
+						cities.get(words[2]).people.get(words[3]).attributes.put(words[i], words[i+1]);	
 			//device
 			else
 				//store first token as key in device state, second as value, repeat
-				for(int i=4;i<words.length;i+=2)
-					cities.get(words[2]).vDevices.get(words[3]).state.put(words[i], words[i+1]);
+				if(auth.hasPermission(commander, credential, "scms_manage_city").active)
+					for(int i=4;i<words.length;i+=2)
+						cities.get(words[2]).vDevices.get(words[3]).state.put(words[i], words[i+1]);
 		
 		//event
 		if ("create".equals(words[0]) && "sensor-event".equals(words[1])) {
@@ -332,6 +348,43 @@ class Controller implements Observer{
 		if("parking".equals(words[0]))
 			if(!ledger.withdraw(Integer.parseInt(words[1]), cities.get(words[3]).people.get(cities.get(words[3]).vDevices.get(words[2]).state.get("driver")).getInfo().get("account")))
 				return false;
+		
+		
+		//authenticator commands
+		//login
+		if("login".equals(words[0])){
+			commander=words[1];
+			credential=words[2];
+		}
+		//define permission
+		if("define_permission".equals(words[0]))
+			auth.definePermission(words[1],words[2],words[3]);
+		//define roles
+		if("define_role".equals(words[0]))
+			auth.defineRole(words[1],words[2],words[3]);
+		//define resource
+		if("define_resource".equals(words[0]))
+			auth.defineResource(words[1]);
+		//add permission
+		if("add_permission_to_role".equals(words[0]))
+			auth.addPermission(words[1],words[2]);
+		//create user
+		if("create_user".equals(words[0]))
+			auth.createUser(words[1],words[2]);
+		//add user credential
+		if("add_user_credential".equals(words[0]))
+			auth.addCredential(words[1],words[3]);
+		//add role to user
+		if("add_role_to_user".equals(words[0]))
+			auth.addRole(words[1],words[2]);
+		//add resource to role
+		if("add_resource_to_role".equals(words[0]))
+			auth.addResource(words[1],words[2]);
+		//printout
+		if("auth_printout".equals(words[0]))
+			auth.printOut();
+			
+		
 		return true;
 	}
 	
@@ -339,7 +392,7 @@ class Controller implements Observer{
 	int CO2Count;
 	boolean carsOn;
 	Controller(){CO2Count=0; carsOn=true;}//needed to count how many devices report
-	public void update(Event e, Device origin) throws CommandException{
+	public void update(Event e, Device origin) throws CommandException, AuthException{
 		//camera
 		if(e.getType().equals("camera")){
 			//emergency
@@ -411,15 +464,6 @@ class Controller implements Observer{
 	}
 }
 
-//COMMAND EXCEPTION
-//Checks if we are referencing an object correctly in our commands
-class CommandException extends Exception{
-    String reason;
-    public CommandException(String r){
-        reason = r;
-    }
-}
-
 interface Visitor{
 	public boolean visit(String id, String user);
 }
@@ -443,14 +487,16 @@ class Authenticator implements Visitor{
 	Map<String, Role> roles = new HashMap();
 	Map<String, Permission> permissions = new HashMap();
 	Map<String, Resource> resources = new HashMap();
-	AuthToken hasPermission(String user, String permission){
+	AuthToken hasPermission(String user, String credential, String permission) throws AuthException{
 		AuthToken a = new AuthToken();
 		a.active=false;
-		if(visit(permission, user)){
+		if(visit(permission, user) && users.get(user).credential.equals(credential)){
 			a.id=permission;
 			a.expiration=System.currentTimeMillis() + 120000;
 			a.active=true;
 		}
+		if(!users.get(user).credential.equals(credential))
+			throw new AuthException("wrong credential");
 		return a;
 	}
 	void definePermission(String id, String name, String description){
@@ -463,13 +509,16 @@ class Authenticator implements Visitor{
 		r.id=id; r.name=name; r.description=description;
 		roles.put(id, r);
 	}
-	void defineResource(String id, String name, String description){
+	void defineResource(String id){
 		Resource r = new Resource();
-		r.id=id; r.name=name; r.description=description;
+		r.id=id;
 		resources.put(id, r);
 	}
-	void addPermission(String permission, String role){
+	void addPermission(String role, String permission){
 		roles.get(role).add(permission, permissions.get(permission), null);
+	}
+	void addResource(String role, String resource){
+		roles.get(role).add(resource, null, resources.get(resource));
 	}
 	void createUser(String id, String username){
 		User u = new User();
@@ -483,11 +532,18 @@ class Authenticator implements Visitor{
 		users.get(id).roles.put(role, roles.get(role));
 	}
 	void printOut(){
+		System.out.println("defined permissions: " + permissions);
+		System.out.println("defined roles: " + roles);
+		System.out.println("defined resources: " + resources);
+		for(Map.Entry<String, Role> entry : roles.entrySet()) {
+			System.out.println(entry.getValue().id + " Permissions: " + entry.getValue().permissions + " Resources: " + entry.getValue().resources );
+		}
+		
 		System.out.println("users: " + users);
-		System.out.println("defined entitlements: " + permissions + roles + resources);
 		for(Map.Entry<String, User> entry : users.entrySet()) {
 			entry.getValue().printOut();
 		}
+		System.out.println();
 	}
 	public boolean visit(String id, String user){
 		if(users.get(user).accept(id))
@@ -508,7 +564,7 @@ class User implements Visitable{
 		permissions.put(id, p);
 	}
 	void printOut(){
-		System.out.println("id: " + id + " roles: " + roles + " permissions: " + permissions);
+		System.out.println("id: " + id + " roles: " + roles + " permissions: " + permissions + " credential: " + credential);
 	}
 	public boolean accept(String id){
 		for(Map.Entry<String, Permission> entry : permissions.entrySet())
@@ -534,8 +590,6 @@ class Permission implements Visitable{
 }
 class Resource implements Visitable{
 	String id;
-	String name;
-	String description;
 	public boolean accept(String i){
 		if(id.equals(i))
 			return true;
@@ -567,9 +621,24 @@ class Role implements Composite, Visitable{
 	}
 }
 
+//EXCEPTIONS
+//Checks if we are referencing an object correctly in our commands
+class CommandException extends Exception{
+    String reason;
+    public CommandException(String r){
+        reason = r;
+    }
+}
+class AuthException extends Exception{
+    String reason;
+    public AuthException(String r){
+        reason = r;
+    }
+}
+
 public class TestDriver {
-    public static void main(String[] args) throws IOException, CommandException {
-    	String commands = new String(Files.readAllBytes(Paths.get("C:\\Users\\Andrew\\Documents\\JCreator Pro\\MyProjects\\authenticator\\src\\script.txt")));
+    public static void main(String[] args) throws IOException, CommandException, AuthException {
+    	String commands = new String(Files.readAllBytes(Paths.get("C:\\Users\\Andrew\\Documents\\JCreator Pro\\MyProjects\\TestDriver\\script.txt")));
         //remove comment lines
         String lines[] = commands.split("\n");
         for(int i=0;i<lines.length;i++)
