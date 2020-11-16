@@ -1,4 +1,4 @@
-//controller service
+//authentication service
 //andrew pham anp6338@g.harvard.edu
 
 import java.util.*;
@@ -180,7 +180,7 @@ class Controller implements Observer{
 			//city
 			if("city".equals(words[1])){
 				//check for city admin permissions
-				if(auth.hasPermission(commander, credential, "scms_define_city").active){//TODO AND TIME OUT
+				if(auth.hasPermission(commander, credential, "scms_define_city").active && auth.hasPermission(commander, credential, "scms_define_city").expiration > System.currentTimeMillis()){//check for active auth token, not timed out
 					City c = new City();
 					c.setInfo(words[2], words[4], words[6], new Pair<String, String>(words[8], words[10]), Integer.parseInt(words[12]));
 					cities.put(words[2], c);
@@ -190,7 +190,7 @@ class Controller implements Observer{
 			//people
 			else if("resident".equals(words[1]) || "visitor".equals(words[1])){
 				//check for city admin permissions
-				if(auth.hasPermission(commander, credential, "scms_manage_city").active){
+				if(auth.hasPermission(commander, credential, "scms_manage_city").active && auth.hasPermission(commander, credential, "scms_define_city").expiration > System.currentTimeMillis()){//check for active auth token, not timed out
 					Person r = new Person();
 					cities.get(words[2]).people.put(words[3], r);//assign person to city
 					//set attributes
@@ -205,7 +205,7 @@ class Controller implements Observer{
 			//devices
 			else{
 				//check for device admin permissions
-				if(auth.hasPermission(commander, credential, "scms_manage_device").active){
+				if(auth.hasPermission(commander, credential, "scms_manage_device").active && auth.hasPermission(commander, credential, "scms_define_city").expiration > System.currentTimeMillis()){//check for active auth token, not timed out
 					VirtualDevice d = new VirtualDevice();
 					cities.get(words[2]).vDevices.put(words[3], d);//add to devices list of that city
 					d.defVDevice(words[1], words[3], new Pair<String, String>(words[5], words[7]), words[9], c, cities.get(words[2]));
@@ -247,13 +247,13 @@ class Controller implements Observer{
 		if ("update".equals(words[0]))
 			//person
 			if("resident".equals(words[1]) || "visitor".equals(words[1]) || "person".equals(words[1]))
-				if(auth.hasPermission(commander, credential, "scms_manage_city").active)
+				if(auth.hasPermission(commander, credential, "scms_manage_city").active && auth.hasPermission(commander, credential, "scms_define_city").expiration > System.currentTimeMillis())//check for active auth token, not timed out
 					for(int i=4;i<words.length;i+=2)
 						cities.get(words[2]).people.get(words[3]).attributes.put(words[i], words[i+1]);	
 			//device
 			else
 				//store first token as key in device state, second as value, repeat
-				if(auth.hasPermission(commander, credential, "scms_manage_city").active)
+				if(auth.hasPermission(commander, credential, "scms_manage_city").active && auth.hasPermission(commander, credential, "scms_define_city").expiration > System.currentTimeMillis())//check for active auth token, not timed out
 					for(int i=4;i<words.length;i+=2)
 						cities.get(words[2]).vDevices.get(words[3]).state.put(words[i], words[i+1]);
 		
@@ -351,7 +351,7 @@ class Controller implements Observer{
 		
 		
 		//authenticator commands
-		//login
+		//login, this is the person running the script
 		if("login".equals(words[0])){
 			commander=words[1];
 			credential=words[2];
@@ -460,6 +460,33 @@ class Controller implements Observer{
 				else
 					origin.action("insufficient funds");
 			}
+			//voice command from an admin that requires permissions
+			if(e.getValue().startsWith("command")){
+				//turn _ into spaces
+				String voiceCommand = e.getValue().replaceAll("_", " ");
+				//replace escape character for _
+				voiceCommand = e.getValue().replace("\\\\ ", "_");
+				//store current controller's session
+				String oldCommander = c.commander;
+				String oldCredential = c.credential;
+				//find speaker's account
+				String biometric = "";
+				for(Map.Entry<String, City> entry : cities.entrySet())
+					for(Map.Entry<String, Person> entry2 : entry.getValue().people.entrySet())
+						if(entry2.getKey().equals(e.getSubject()))
+							if(entry2.getValue().attributes.get("bio-metric") != null)
+								biometric = entry2.getValue().attributes.get("bio-metric");
+				if(biometric.equals(""))
+					throw new AuthException("no credential found");
+				//login to speakers account
+				c.commander = e.getSubject();
+				c.credential = biometric;
+				//feed the command to the controller minus the word command 
+				c.command(voiceCommand.substring(8));
+				//log back in to the script controller's session
+				c.commander = oldCommander;
+				c.credential = oldCredential;
+			}
 		}
 	}
 }
@@ -483,10 +510,12 @@ class AuthToken{
 
 //AUTHENTICATOR
 class Authenticator implements Visitor{
+	//declared entitlements
 	Map<String, User> users = new HashMap();
 	Map<String, Role> roles = new HashMap();
 	Map<String, Permission> permissions = new HashMap();
 	Map<String, Resource> resources = new HashMap();
+	//has permission checks credentials, permissions, and returns an auth token either active or inactive with a timeout
 	AuthToken hasPermission(String user, String credential, String permission) throws AuthException{
 		AuthToken a = new AuthToken();
 		a.active=false;
@@ -497,6 +526,8 @@ class Authenticator implements Visitor{
 		}
 		if(!users.get(user).credential.equals(credential))
 			throw new AuthException("wrong credential");
+		if(!visit(permission, user))
+			throw new AuthException("not authorized");
 		return a;
 	}
 	void definePermission(String id, String name, String description){
@@ -531,6 +562,7 @@ class Authenticator implements Visitor{
 	void addRole(String id, String role){
 		users.get(id).roles.put(role, roles.get(role));
 	}
+	//debug printout showing all defined entitlements, role composites, and users
 	void printOut(){
 		System.out.println("defined permissions: " + permissions);
 		System.out.println("defined roles: " + roles);
@@ -545,6 +577,7 @@ class Authenticator implements Visitor{
 		}
 		System.out.println();
 	}
+	//visits roles permissions or resources to check for authorization. visitor pattern
 	public boolean visit(String id, String user){
 		if(users.get(user).accept(id))
 			return true;
@@ -566,6 +599,7 @@ class User implements Visitable{
 	void printOut(){
 		System.out.println("id: " + id + " roles: " + roles + " permissions: " + permissions + " credential: " + credential);
 	}
+	//accepts a visitor and checks if user has authorization
 	public boolean accept(String id){
 		for(Map.Entry<String, Permission> entry : permissions.entrySet())
 			if(entry.getValue().accept(id))
@@ -578,6 +612,7 @@ class User implements Visitable{
 }
 
 //Entitlements
+//permissions are composite design leaves and accept visitor design visitors checking for authorization
 class Permission implements Visitable{
 	String id;
 	String name;
@@ -588,6 +623,7 @@ class Permission implements Visitable{
 		return false;
 	}
 }
+//resources are composite design leaves and accept visitor design visitors checking for authorization
 class Resource implements Visitable{
 	String id;
 	public boolean accept(String i){
@@ -596,6 +632,7 @@ class Resource implements Visitable{
 		return false;
 	}
 }
+//roles are composites of permissions and resources. they accept visitor design visitors checking for authorization
 class Role implements Composite, Visitable{
 	Map<String, Permission> permissions = new HashMap();
 	Map<String, Resource> resources = new HashMap();
