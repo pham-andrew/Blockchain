@@ -1,0 +1,18 @@
+--------------------Configuration: ControllerService - JDK version 1.8.0_101 <Default> - <Default>--------------------
+define city city_1 name Cambridge-MA account cambridge-account lat 42.3766 long -71.1160 radius 100
+
+define robot city_1 bot_1 lat 42.3735 long -71.1205 enabled true activity "cleaning"
+
+define robot city_1 bot_2 lat 42.3729 long -71.1192 enabled true activity "assisting student"
+
+update robot city_1 bot_1 lat 42.3732 long -71.1195 
+
+update robot city_1 bot_2 activity "walking dog"
+
+create sensor-event city_1 bot_1 type camera value traffic_accident
+
+bot_1: announcing stay calm help is on the way
+bot_1: addressing traffic_accident at 42.3735 -71.1205
+
+
+Process completed.

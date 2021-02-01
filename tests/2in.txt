@@ -1,0 +1,23 @@
+
+# City Commands
+# Define a city
+# define city <city_id> name <name> account <address> lat <float> long <float> radius <float> 
+
+define city city_1 name Cambridge-MA account cambridge-account lat 42.3766 long -71.1160 radius 100
+
+# Define a robot
+# define robot <city_id> <device_id> lat <float> long <float> enabled (true|false) activity <string>
+
+define robot city_1 bot_1 lat 42.3735 long -71.1205 enabled true activity "cleaning"
+define robot city_1 bot_2 lat 42.3729 long -71.1192 enabled true activity "assisting student"
+
+
+# Update a robot
+# update robot <city_id> <device_id> [lat <float> long <float>] [enabled (true|false)] [activity <string>]
+
+update robot city_1 bot_1 lat 42.3732 long -71.1195 
+update robot city_1 bot_2 activity "walking dog"
+
+
+# Trigger Rule Emergency 1
+create sensor-event city_1 bot_2 type camera value fire

@@ -1,0 +1,291 @@
+--------------------Configuration: ControllerService - JDK version 1.8.0_101 <Default> - <Default>--------------------
+define city city_1 name Cambridge-MA account cambridge-account lat 42.3766 long -71.1160 radius 100
+
+show city city_1
+
+City: city_1
+Name: Cambridge-MA
+Account: cambridge-account
+Lat: 42.3766 Lon: -71.1160
+People: []
+Devices: []
+
+define street-sign city_1 ss_1 lat 42.3732 long -71.1202 enabled true text "Welcome to Harvard Square"
+
+define street-sign city_1 ss_2 lat 42.3736 long -71.1214 enabled true text "Brattle Theatre"
+
+update street-sign city_1 ss_1 text "The time is now 9 00 pm"
+
+update street-sign city_1 ss_2 text "Now playing, Cassablaca"
+
+define info-kiosk city_1 kiosk_1 lat 42.3723 long -71.1230 enabled true image https://media-cdn.tripadvisor.com/media/photo-s/05/94/cc/10/charles-hotel.jpg
+
+define info-kiosk city_1 kiosk_2 lat 42.3766 long -71.1160 enabled true image https://www.lwa-architects.com/wp-content/uploads/2014/12/Harvard-SciCtr_Ext-bikes-992x1250.jpg
+
+update info-kiosk city_1 kiosk_1 enabled false 
+
+update info-kiosk city_1 kiosk_2 image https://www.google.com/maps/place/Cambridge,+MA/@42.3737266,-71.1236297,16.23z/data=!4m5!3m4!1s0x89e370a5cb30cc5f0xc53a8e6489686c87!8m2!3d42.3736158!4d-71.1097335
+
+define street-light city_1 sl_1 lat 42.3770 long -71.1167 enabled true brightness 8
+
+define street-light city_1 sl_2 lat 42.3749 long -71.1218 enabled true brightness 5
+
+update street-light city_1 sl_1 brightness 4
+
+update street-light city_1 sl_1 enabled false brightness 5
+
+define parking-space city_1 ps_1 lat 42.3743 long -71.1202 enabled true rate 25
+
+define parking-space city_1 ps_2 lat 42.3744 long -71.1203 enabled true rate 25
+
+update parking-space city_1 ps_1 rate 50
+
+update parking-space city_1 ps_2 rate 50
+
+define robot city_1 bot_1 lat 42.3735 long -71.1205 enabled true activity "cleaning"
+
+define robot city_1 bot_2 lat 42.3729 long -71.1192 enabled true activity "assisting student"
+
+update robot city_1 bot_1 lat 42.3732 long -71.1195 
+
+update robot city_1 bot_2 activity "walking dog"
+
+define vehicle city_1 car_1 lat 42.3725 long -71.1161 enabled true type car activity "parked" capacity 4 driver resident_1
+
+define vehicle city_1 bus_1 lat 42.3736 long -71.1214 enabled true type bus activity "on route" capacity 30 driver resident_1
+
+update vehicle city_1 car_1 lat 42.3830 long -71.1125  activity "driving" 
+
+update vehicle city_1 bus_1 lat 42.3635 long -71.0985 enabled true activity "on route" 
+
+show device city_1 bus_1
+
+
+ID: bus_1
+Type: vehicle
+Lat: 42.3736 Lon: -71.1214
+State: {activity="on route", driver=resident_1, type=bus, enabled=true, lat=42.3635, long=-71.0985, capacity=30}
+Event:   Type: null Value: null Subject: null
+
+show device city_1
+
+
+ID: bot_1
+Type: robot
+Lat: 42.3735 Lon: -71.1205
+State: {activity="cleaning", enabled=true, lat=42.3732, long=-71.1195}
+Event:   Type: null Value: null Subject: null
+
+
+ID: ps_1
+Type: parking-space
+Lat: 42.3743 Lon: -71.1202
+State: {rate=50, enabled=true}
+Event:   Type: null Value: null Subject: null
+
+
+ID: kiosk_1
+Type: info-kiosk
+Lat: 42.3723 Lon: -71.1230
+State: {image=https://media-cdn.tripadvisor.com/media/photo-s/05/94/cc/10/charles-hotel.jpg, enabled=false}
+Event:   Type: null Value: null Subject: null
+
+
+ID: ps_2
+Type: parking-space
+Lat: 42.3744 Lon: -71.1203
+State: {rate=50, enabled=true}
+Event:   Type: null Value: null Subject: null
+
+
+ID: bot_2
+Type: robot
+Lat: 42.3729 Lon: -71.1192
+State: {activity="walking dog", enabled=true}
+Event:   Type: null Value: null Subject: null
+
+
+ID: ss_1
+Type: street-sign
+Lat: 42.3732 Lon: -71.1202
+State: {text="The time is now 9 00 pm", enabled=true}
+Event:   Type: null Value: null Subject: null
+
+
+ID: ss_2
+Type: street-sign
+Lat: 42.3736 Lon: -71.1214
+State: {text="Now playing, Cassablaca", enabled=true}
+Event:   Type: null Value: null Subject: null
+
+
+ID: kiosk_2
+Type: info-kiosk
+Lat: 42.3766 Lon: -71.1160
+State: {image=https://www.google.com/maps/place/Cambridge,+MA/@42.3737266,-71.1236297,16.23z/data=!4m5!3m4!1s0x89e370a5cb30cc5f0xc53a8e6489686c87!8m2!3d42.3736158!4d-71.1097335, enabled=true}
+Event:   Type: null Value: null Subject: null
+
+
+ID: car_1
+Type: vehicle
+Lat: 42.3725 Lon: -71.1161
+State: {activity="driving", driver=resident_1, type=car, enabled=true, lat=42.3830, long=-71.1125, capacity=4}
+Event:   Type: null Value: null Subject: null
+
+
+ID: sl_2
+Type: street-light
+Lat: 42.3749 Lon: -71.1218
+State: {brightness=5, enabled=true}
+Event:   Type: null Value: null Subject: null
+
+
+ID: bus_1
+Type: vehicle
+Lat: 42.3736 Lon: -71.1214
+State: {activity="on route", driver=resident_1, type=bus, enabled=true, lat=42.3635, long=-71.0985, capacity=30}
+Event:   Type: null Value: null Subject: null
+
+
+ID: sl_1
+Type: street-light
+Lat: 42.3770 Lon: -71.1167
+State: {brightness=5, enabled=false}
+Event:   Type: null Value: null Subject: null
+
+create sensor-event city_1 bus_1 type microphone value Does_this_bus_go_to_central_square? subject jane
+
+bus_1: says yes
+
+create sensor-event city_1 bus_1 type camera value "person boarding bus" subject jane
+
+create sensor-event city_1 sl_1 type thermometer value 80 
+
+create sensor-event city_1 bot_1 type thermometer value 98.6 joe
+
+create sensor-output city_1 bot_1 type speaker value "your_temperature_is_normal"
+
+bot_1: "your_temperature_is_normal"
+
+define resident city_1 resident_1 name jane bio-metric "voice-print='voiceprint-jane',face-print='faceprint-jane'" phone 781-222-3344 role adult lat 42.3735 long -71.1205 account janes_account
+
+create-account janes_account 1000
+
+update resident city_1 resident_1 name jane lat 42.3830 long -71.1125 
+
+define visitor city_1 visitor_1 bio-metric "iris-print='irisprint-visitor_1'" lat 42.3744 long -71.1203 
+
+update visitor city_1 visitor_1 lat 42.3830 long -71.1125
+
+show person city_1 resident_1
+
+{role=adult, phone=781-222-3344, name=jane, bio-metric="voice-print='voiceprint-jane',face-print='faceprint-jane'", lat=42.3830, long=-71.1125, account=janes_account}
+
+show person city_1 visitor_1
+
+{bio-metric="iris-print='irisprint-visitor_1'", lat=42.3830, long=-71.1125}
+
+create sensor-event city_1 sl_1 type camera value fire
+
+bot_1: announcing fire in city_1
+ps_1: announcing fire in city_1
+kiosk_1: announcing fire in city_1
+ps_2: announcing fire in city_1
+bot_2: announcing fire in city_1
+ss_1: announcing fire in city_1
+ss_2: announcing fire in city_1
+kiosk_2: announcing fire in city_1
+car_1: announcing fire in city_1
+sl_2: announcing fire in city_1
+bus_1: announcing fire in city_1
+sl_1: announcing fire in city_1
+
+bot_1: addressing fire at 42.3770 -71.1167
+ps_1: helping people find shelter
+kiosk_1: addressing fire at 42.3770 -71.1167
+ps_2: helping people find shelter
+bot_2: addressing fire at 42.3770 -71.1167
+ss_1: helping people find shelter
+ss_2: addressing fire at 42.3770 -71.1167
+kiosk_2: helping people find shelter
+car_1: addressing fire at 42.3770 -71.1167
+sl_2: helping people find shelter
+bus_1: addressing fire at 42.3770 -71.1167
+sl_1: helping people find shelter
+
+create sensor-event city_1 sl_2 type camera value traffic_accident
+
+sl_2: announcing stay calm help is on the way
+bot_1: addressing traffic_accident at 42.3749 -71.1218
+
+create sensor-event city_1 sl_1 type co2meter value 1200
+
+create sensor-event city_1 sl_2 type co2meter value 1300
+
+create sensor-event city_1 ps_1 type co2meter value 1400
+
+car_1 disabled
+bus_1 disabled
+
+create sensor-event city_1 sl_1 type co2meter value 900
+
+create sensor-event city_1 sl_2 type co2meter value 800
+
+create sensor-event city_1 bot_1 type co2meter value 700
+
+car_1 enabled
+bus_1 enabled
+
+create sensor-event city_1 bot_1 type camera value littering subject resident_1
+
+bot_1: says please do not litter
+bot_1: addressing litter at 42.3735 -71.1205
+
+Withdrew 10 from janes_account
+
+create sensor-event city_1 kiosk_1 type microphone value broken_glass_sound
+
+bot_1: addressing broken_glass at 42.3723 -71.1230
+
+create sensor-event city_1 bot_2 type camera value person_seen subject resident_1
+
+define resident city_1 resident_2 name kid bio-metric "voice-print='voiceprint-janeskid',face-print='faceprint-janeskid'" phone 781-222-3344 role child lat 42.3735 long -71.1205 account janes_account
+
+create sensor-event city_1 bot_1 type microphone value find_resident_2 subject resident_1
+
+bot_1: retrieving resident_2 at 42.3735 -71.1205
+
+bot_1: says stay here we will retrieve the child
+
+create sensor-event city_1 ps_1 type camera value parked subject car_1
+
+Withdrew 10 from janes_account
+
+create sensor-event city_1 bus_1 type microphone value Does_this_bus_go_to_central_square? subject resident_1
+
+bus_1: says yes
+
+create sensor-event city_1 bus_1 type camera value boards_bus subject resident_1
+
+bus_1: says hello good to see you
+
+Withdrew 10 from janes_account
+
+create sensor-event city_1 bus_1 type camera value boards_bus subject resident_2
+
+bus_1: says hello good to see you
+
+Withdrew 10 from janes_account
+
+create sensor-event city_1 kiosk_2 type microphone value what_movies_are_showing_tonight? subject resident_1
+
+kiosk_2: says casablanca displays poster
+
+create sensor-event city_1 kiosk_2 type microphone value reserve_2_seats_for_the_9_pm_showing_of_Casablanca subject resident_1
+
+Withdrew 10 from janes_account
+
+kiosk_2: says seats reserverd
+
+
+Process completed.

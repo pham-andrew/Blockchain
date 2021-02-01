@@ -1,0 +1,35 @@
+
+# City Commands
+# Define a city
+# define city <city_id> name <name> account <address> lat <float> long <float> radius <float> 
+
+define city city_1 name Cambridge-MA account cambridge-account lat 42.3766 long -71.1160 radius 100
+
+# Define a robot
+# define robot <city_id> <device_id> lat <float> long <float> enabled (true|false) activity <string>
+
+define robot city_1 bot_1 lat 42.3735 long -71.1205 enabled true activity "cleaning"
+define robot city_1 bot_2 lat 42.3729 long -71.1192 enabled true activity "assisting student"
+
+# Define a vehicle
+# define vehicle <city_id> <device_id> lat <float> long <float> enabled (true|false) type (bus|car) activity <string> capacity <int> driver <int>
+
+define vehicle city_1 car_1 lat 42.3725 long -71.1161 enabled true type car activity "parked" capacity 4 driver resident_1
+define vehicle city_1 bus_1 lat 42.3736 long -71.1214 enabled true type bus activity "on route" capacity 30 driver resident_1
+
+
+# Update a vehicle
+# update vehicle <city_id> <device_id> [lat <float> long <float>] [enabled (true|false)] [activity <string>] [fee <int>]
+
+update vehicle city_1 car_1 lat 42.3830 long -71.1125  activity "driving" 
+update vehicle city_1 bus_1 lat 42.3635 long -71.0985 enabled true activity "on route" 
+
+# Trigger Rule CO2 Event 1
+create sensor-event city_1 car_1 type co2meter value 1200
+create sensor-event city_1 bus_1 type co2meter value 1300
+create sensor-event city_1 bot_1 type co2meter value 1400
+
+# Trigger Rule CO2 Event 2
+create sensor-event city_1 bot_2 type co2meter value 900
+create sensor-event city_1 bus_1 type co2meter value 800
+create sensor-event city_1 bot_1 type co2meter value 700

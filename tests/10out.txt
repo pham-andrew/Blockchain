@@ -1,0 +1,37 @@
+--------------------Configuration: ControllerService - JDK version 1.8.0_101 <Default> - <Default>--------------------
+define city city_1 name Cambridge-MA account cambridge-account lat 42.3766 long -71.1160 radius 100
+
+define robot city_1 bot_1 lat 42.3735 long -71.1205 enabled true activity "cleaning"
+
+define robot city_1 bot_2 lat 42.3729 long -71.1192 enabled true activity "assisting student"
+
+update robot city_1 bot_1 lat 42.3732 long -71.1195 
+
+update robot city_1 bot_2 activity "walking dog"
+
+define resident city_1 resident_1 name jane bio-metric "voice-print='voiceprint-jane',face-print='faceprint-jane'" phone 781-222-3344 role adult lat 42.3735 long -71.1205 account janes_account
+
+define resident city_1 resident_2 name kid bio-metric "voice-print='voiceprint-janeskid',face-print='faceprint-janeskid'" phone 781-222-3344 role child lat 42.3735 long -71.1205 account janes_account
+
+create-account janes_account 1000
+
+define info-kiosk city_1 kiosk_1 lat 42.3723 long -71.1230 enabled true image https://media-cdn.tripadvisor.com/media/photo-s/05/94/cc/10/charles-hotel.jpg
+
+define info-kiosk city_1 kiosk_2 lat 42.3766 long -71.1160 enabled true image https://www.lwa-architects.com/wp-content/uploads/2014/12/Harvard-SciCtr_Ext-bikes-992x1250.jpg
+
+update info-kiosk city_1 kiosk_1 enabled false 
+
+update info-kiosk city_1 kiosk_2 image https://www.google.com/maps/place/Cambridge,+MA/@42.3737266,-71.1236297,16.23z/data=!4m5!3m4!1s0x89e370a5cb30cc5f0xc53a8e6489686c87!8m2!3d42.3736158!4d-71.1097335
+
+create sensor-event city_1 kiosk_2 type microphone value what_movies_are_showing_tonight? subject resident_1
+
+kiosk_2: says casablanca displays poster
+
+create sensor-event city_1 kiosk_2 type microphone value reserve_2_seats_for_the_9_pm_showing_of_Casablanca subject resident_1
+
+Withdrew 10 from janes_account
+
+kiosk_2: says seats reserverd
+
+
+Process completed.

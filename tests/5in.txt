@@ -1,0 +1,31 @@
+
+# City Commands
+# Define a city
+# define city <city_id> name <name> account <address> lat <float> long <float> radius <float> 
+
+define city city_1 name Cambridge-MA account cambridge-account lat 42.3766 long -71.1160 radius 100
+
+# Define a robot
+# define robot <city_id> <device_id> lat <float> long <float> enabled (true|false) activity <string>
+
+define robot city_1 bot_1 lat 42.3735 long -71.1205 enabled true activity "cleaning"
+define robot city_1 bot_2 lat 42.3729 long -71.1192 enabled true activity "assisting student"
+
+
+# Update a robot
+# update robot <city_id> <device_id> [lat <float> long <float>] [enabled (true|false)] [activity <string>]
+
+update robot city_1 bot_1 lat 42.3732 long -71.1195 
+update robot city_1 bot_2 activity "walking dog"
+
+# Person Commands
+# Define a new Resident 
+# define resident <city_id> <person_id> name <name> bio-metric <string> phone <phone_number> role (adult|child|administrator) lat <lat> long <long> account <account_address>
+
+define resident city_1 resident_1 name jane bio-metric "voice-print='voiceprint-jane',face-print='faceprint-jane'" phone 781-222-3344 role adult lat 42.3735 long -71.1205 account janes_account
+
+#create residents account
+create-account janes_account 1000
+
+# Trigger Rule Litter Event
+create sensor-event city_1 bot_1 type camera value littering subject resident_1
